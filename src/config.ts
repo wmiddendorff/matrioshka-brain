@@ -104,10 +104,10 @@ export class ConfigManager {
         return this.mergeWithDefaults(loaded);
       } catch (error) {
         console.error(`Error loading config: ${error}`);
-        return { ...DEFAULT_CONFIG };
+        return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       }
     }
-    return { ...DEFAULT_CONFIG };
+    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
 
   /**
@@ -189,7 +189,7 @@ export class ConfigManager {
    * Reset to default configuration
    */
   reset(): void {
-    this.config = { ...DEFAULT_CONFIG };
+    this.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
 
   /**
