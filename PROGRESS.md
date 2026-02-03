@@ -2,8 +2,8 @@
 
 **Last Updated:** 2026-02-02
 **Architecture:** MCP-first
-**Current Phase:** Phase 0 - Foundation
-**Status:** Starting
+**Current Phase:** Phase 1 - Telegram Tools
+**Status:** In Progress
 
 ---
 
@@ -23,8 +23,8 @@
 
 | Phase | Status | Started | Completed |
 |-------|--------|---------|-----------|
-| Phase 0: Foundation | 🔄 In Progress | 2026-02-02 | - |
-| Phase 1: Telegram Tools | ⬜ Not Started | - | - |
+| Phase 0: Foundation | ✅ Complete | 2026-02-02 | 2026-02-02 |
+| Phase 1: Telegram Tools | 🔄 In Progress | 2026-02-02 | - |
 | Phase 2: Memory Tools | ⬜ Not Started | - | - |
 | Phase 3: Soul/Identity Tools | ⬜ Not Started | - | - |
 | Phase 4: Autonomy (Heartbeat) | ⬜ Not Started | - | - |
@@ -34,14 +34,14 @@
 
 ## Phase 0: Foundation (MCP Server Skeleton)
 
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Objective:** Create MCP server infrastructure and basic tooling.
 
 ### Acceptance Criteria
 
 - [x] MCP server starts and registers with Claude Code
-- [ ] `mudpuppy init` creates workspace structure
-- [ ] `mudpuppy config get/set` works
+- [x] `mudpuppy init` creates workspace structure
+- [x] `mudpuppy config get/set` works
 - [x] Config loads from `~/.mudpuppy/config.json`
 - [x] All paths use `$MUDPUPPY_HOME` or `~`
 - [x] `npm run build` succeeds
@@ -58,8 +58,8 @@
 
 - [x] Unit: Config loading, path resolution (33 tests)
 - [x] Integration: MCP server registration
-- [ ] Manual: CLI commands work
-- [ ] **Human verification obtained**
+- [x] Manual: CLI commands work (init, config get/set, status)
+- [x] **Human verification obtained**
 
 ---
 
