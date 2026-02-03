@@ -36,7 +36,7 @@ Each module has its own directory with detailed documentation:
 - **[memory/](./memory/)** - Memory persistence, hybrid search, embeddings (Phase 2)
 - **[soul/](./soul/)** - Soul/Identity system, bootstrap files (Phase 3)
 - **[autonomy/](./autonomy/)** - Heartbeat scheduler, audit logging (Phase 4)
-- security/ - Security polish, penetration testing (Phase 5, not started)
+- **[security/](./security/)** - Security model, approval system, audit logging (Phase 5)
 
 ## Documentation Standards
 
@@ -88,7 +88,8 @@ Documentation must be updated during development, not after:
 | Memory | Phase 2 | ✅ Complete | ✅ Complete (README, API, IMPLEMENTATION, TESTING) |
 | Soul/Approval | Phase 3 | ✅ Complete | ✅ Complete (README, API, IMPLEMENTATION, TESTING) |
 | Autonomy/Audit | Phase 4 | ✅ Complete | ✅ Complete (README, API, IMPLEMENTATION, TESTING) |
-| Security | Phase 5 | ⬜ Not started | ⬜ Not started |
+| Security | Phase 5 | ✅ Complete | ✅ Complete (README, API, IMPLEMENTATION, TESTING) |
+| Skill Layer | Phase 5 | ✅ Complete | N/A (SKILL.md is the deliverable) |
 
 ## Current Source Files
 
@@ -139,6 +140,17 @@ src/
     ├── types.ts      # Heartbeat type definitions
     ├── parser.ts     # HEARTBEAT.md parser
     └── scheduler.ts  # HeartbeatScheduler (interval-based execution)
+```
+
+## Other Project Files
+
+```
+skills/
+└── mudpuppy/
+    └── SKILL.md          # Claude Code skill (persona + workflows)
+
+setup.sh                  # Portable setup script
+.mcp.json.example         # MCP config template (placeholder paths)
 ```
 
 ## Quick Links
