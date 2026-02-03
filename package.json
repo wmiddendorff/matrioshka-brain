@@ -1,0 +1,44 @@
+{
+  "name": "mudpuppy",
+  "version": "0.1.0",
+  "description": "Security-hardened autonomous AI agent extending Claude Code",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "mudpuppy": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/cli/index.js",
+    "build:watch": "tsc --watch",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "autonomous",
+    "claude",
+    "telegram",
+    "mudpuppy",
+    "salamander"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "esbuild": "^0.27.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "grammy": "^1.39.3"
+  }
+}
