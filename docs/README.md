@@ -86,8 +86,8 @@ Documentation must be updated during development, not after:
 | Config | Phase 0 | ✅ Implemented | ✅ Updated |
 | MCP Server | Phase 0 | ✅ Implemented | ⬜ Not started |
 | Tools Registry | Phase 0 | ✅ Implemented | ⬜ Not started |
-| Telegram | Phase 1 | ⬜ Not started | 🔄 Planned (README only) |
-| Memory | Phase 2 | ⬜ Not started | ⬜ Not started |
+| Telegram | Phase 1 | ✅ Implemented | 🔄 Planned (README only) |
+| Memory | Phase 2 | ✅ Complete | ✅ Updated |
 | Soul | Phase 3 | ⬜ Not started | ⬜ Not started |
 | Autonomy | Phase 4 | ⬜ Not started | ⬜ Not started |
 | Security | Phase 5 | ⬜ Not started | ⬜ Not started |
@@ -98,11 +98,29 @@ Documentation must be updated during development, not after:
 src/
 ├── index.ts          # Main exports
 ├── config.ts         # Configuration manager
+├── secrets.ts        # Secrets manager
 ├── mcp-server.ts     # MCP server entry point
 ├── cli/
 │   └── index.ts      # CLI commands
-└── tools/
-    └── index.ts      # Tool registry (config_get, config_set)
+├── tools/
+│   ├── index.ts      # Tool registry (config_get, config_set)
+│   ├── telegram.ts   # Telegram MCP tools (4 tools)
+│   └── memory.ts     # Memory MCP tools (5 tools)
+├── telegram/
+│   ├── index.ts      # Module re-exports
+│   ├── types.ts      # Telegram type definitions
+│   ├── protocol.ts   # IPC protocol
+│   ├── daemon.ts     # Daemon lifecycle
+│   ├── ipc.ts        # IPC client
+│   └── bot.ts        # Telegram bot daemon
+└── memory/
+    ├── index.ts      # Module re-exports
+    ├── types.ts      # Memory type definitions
+    ├── db.ts         # SQLite schema + CRUD + search primitives
+    ├── embeddings.ts # Local embedding generation
+    ├── search.ts     # Hybrid search algorithm
+    ├── daily-log.ts  # Daily markdown log files
+    └── indexer.ts    # File auto-indexer (fs.watch + polling)
 ```
 
 ## Quick Links

@@ -26,3 +26,6 @@ export {
 export { SecretsManager, getSecret, setSecret, type SecretKey } from './secrets.js';
 
 export * from './telegram/index.js';
+
+// === MEMORY EXPORTS ===
+export * from './memory/index.js';

@@ -112,7 +112,7 @@ registerTool({
 export const TOOL_CATEGORIES = {
   config: ['config_get', 'config_set'],
   telegram: ['telegram_poll', 'telegram_send', 'telegram_pair', 'telegram_status'],
-  memory: ['memory_search', 'memory_add', 'memory_get', 'memory_stats'],
+  memory: ['memory_add', 'memory_search', 'memory_get', 'memory_stats', 'memory_delete'],
   soul: ['soul_read', 'soul_propose_update'],
   heartbeat: ['heartbeat_status', 'heartbeat_pause', 'heartbeat_resume'],
 } as const;
@@ -124,6 +124,7 @@ export const TOOL_CATEGORIES = {
 export async function initTools(): Promise<void> {
   // Dynamically import tool modules to register them
   await import('./telegram.js');
+  await import('./memory.js');
 }
 
 // Auto-initialize when module is loaded (for MCP server)

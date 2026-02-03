@@ -61,6 +61,7 @@ Document mistakes here to prevent repeating them. Keep under 15 items.
 4. Archive PRDs, don't delete them
 5. Use `~` or `$HOME` for paths, never hardcode `/home/username/...`
 6. Secrets go in `.env` or `secrets.env`, never in code or git
+7. **Update ALL docs when modifying code** - includes `docs/README.md` source tree, module status table, and all module-specific docs (README, API, IMPLEMENTATION, TESTING). Do this in the same task, not as an afterthought.
 
 *(Add new guardrails as mistakes happen)*
 

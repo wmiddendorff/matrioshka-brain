@@ -15,7 +15,7 @@ import {
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { getAllTools, executeTool, initTools } from './tools/index.js';
-import { getMudpuppyHome, isWorkspaceInitialized } from './config.js';
+import { getMudpuppyHome, isWorkspaceInitialized, ConfigManager } from './config.js';
 
 // Create MCP server
 const server = new Server(
@@ -38,10 +38,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: zodToJsonSchema(tool.inputSchema, {
-        $refStrategy: 'none',
-        target: 'openApi3',
-      }),
+      inputSchema: (() => {
+        // Generate JSON Schema compatible with draft 2020-12
+        // Note: 'openApi3' target generates boolean exclusiveMinimum which is invalid
+        const schema = zodToJsonSchema(tool.inputSchema, {
+          $refStrategy: 'none',
+        }) as Record<string, unknown>;
+        // Remove $schema property - MCP doesn't need it
+        delete schema.$schema;
+        return schema;
+      })(),
     })),
   };
 });
@@ -87,6 +93,20 @@ async function main() {
 
   // Initialize all tools before starting server
   await initTools();
+
+  // Start file auto-indexer if configured
+  try {
+    const config = new ConfigManager();
+    if (config.getValue<boolean>('memory.autoIndex')) {
+      const { startIndexer } = await import('./memory/indexer.js');
+      const interval = config.getValue<number>('memory.indexInterval') ?? 5000;
+      await startIndexer({ interval });
+      console.error(`Mudpuppy file indexer started (interval: ${interval}ms)`);
+    }
+  } catch (err) {
+    console.error('Failed to start file indexer:', err);
+    // Non-fatal: server continues without indexer
+  }
 
   // Start server with stdio transport
   const transport = new StdioServerTransport();
