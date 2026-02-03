@@ -1,18 +1,15 @@
 # Telegram Integration
 
-> **Status:** Not yet implemented (Phase 1)
->
-> This document describes the planned MCP tool-based Telegram integration.
-> The previous v1 skill-based implementation was archived during the v2 refactoring.
+> **Status:** Complete (Phase 1)
 
 ## Overview
 
-Telegram integration enables remote interaction with the Mudpuppy agent through Telegram's Bot API. The v2 architecture uses MCP tools for capabilities with an optional skill layer for persona/workflow.
+Telegram integration enables remote interaction with the Mudpuppy agent through Telegram's Bot API. The architecture uses a background daemon process that communicates with MCP tools over Unix socket IPC.
 
 - **Library**: grammY (modern Telegram Bot API framework)
-- **Architecture**: MCP tools + daemon process
+- **Architecture**: MCP tools + daemon process + SQLite queue
 - **Authentication**: DM pairing system with local approval
-- **Security**: Approval-first, paired users only
+- **Security**: Paired users only, approval-first
 
 ## Architecture
 
@@ -23,146 +20,95 @@ Telegram integration enables remote interaction with the Mudpuppy agent through 
 └─────────────────┘     └──────────────────┘     └─────────────┘
                               │
                               ▼
+                        ┌──────────────┐
+                        │  SQLite DB   │
+                        │  (queue +    │
+                        │   pairings)  │
+                        └──────────────┘
+                              │
                         Unix Socket IPC
 ```
 
 ### Components
 
-1. **Bot Daemon** (`mudpuppy telegram start`)
-   - Long-running background process
+1. **Bot Daemon** (`src/telegram/bot.ts`)
+   - Long-running background process started via `mudpuppy telegram start`
    - Connects to Telegram API via grammY
-   - Queues incoming messages to JSONL file
-   - Sends outgoing messages from response queue
-   - Communicates with MCP server via Unix socket
+   - Queues incoming messages to SQLite
+   - Serves IPC requests over Unix socket
+   - Handles `/start`, `/help`, `/status` commands
+   - Signals readiness with `DAEMON_READY` on stdout
 
-2. **MCP Tools** (exposed to Claude Code)
-   - `telegram_poll` - Retrieve pending messages
-   - `telegram_send` - Send a message to a user
-   - `telegram_pair` - Initiate pairing approval flow
-   - `telegram_status` - Get bot status and stats
+2. **IPC Protocol** (`src/telegram/protocol.ts`)
+   - Newline-delimited JSON over Unix socket
+   - Request/response with UUID correlation
+   - Methods: `ping`, `status`, `poll`, `send`, `pair`
 
-3. **Skill Layer** (optional, Phase 5)
-   - Defines persona and workflow
-   - Automatically polls and responds
-   - Personality injection
+3. **IPC Client** (`src/telegram/ipc.ts`)
+   - Used by MCP tools to communicate with daemon
+   - 5-second default timeout per request
+   - High-level functions: `ping()`, `getStatus()`, `pollMessages()`, `sendMessage()`, `managePairings()`
 
-## Planned MCP Tools
+4. **Daemon Manager** (`src/telegram/daemon.ts`)
+   - PID file management (`bot/telegram.pid`)
+   - Start/stop/restart lifecycle
+   - Stale PID detection and cleanup
+   - Development mode (tsx) and production mode (node) support
 
-### `telegram_poll`
+5. **MCP Tools** (`src/tools/telegram.ts`)
+   - `telegram_status` — Get bot daemon status
+   - `telegram_poll` — Retrieve pending messages
+   - `telegram_send` — Send a message to a paired user
+   - `telegram_pair` — Manage user pairings (list/approve/deny/revoke)
 
-Retrieve pending messages from the queue.
+## Quick Start
 
-```typescript
-// Input
-{
-  limit?: number;  // Max messages to return (default: 10)
-  clear?: boolean; // Clear messages after reading (default: true)
-}
+```bash
+# 1. Initialize workspace
+mudpuppy init
 
-// Output
-{
-  messages: Array<{
-    id: string;
-    userId: number;
-    username?: string;
-    text: string;
-    timestamp: string;
-    chatType: 'private' | 'group';
-  }>;
-  remaining: number;
-}
-```
+# 2. Set bot token (stored in secrets.env)
+mudpuppy telegram set-token <your-bot-token>
 
-### `telegram_send`
+# 3. Start the daemon
+mudpuppy telegram start
 
-Send a message to a Telegram user.
+# 4. Have a user send /start to your bot on Telegram
 
-```typescript
-// Input
-{
-  userId: number;
-  text: string;
-  parseMode?: 'HTML' | 'Markdown';
-  replyToMessageId?: number;
-}
+# 5. Approve the pairing (via MCP tool or CLI)
+# telegram_pair { action: "list" }
+# telegram_pair { action: "approve", userId: 12345 }
 
-// Output
-{
-  success: boolean;
-  messageId?: number;
-  error?: string;
-}
-```
+# 6. Poll for messages
+# telegram_poll {}
 
-### `telegram_pair`
-
-Initiate or approve a pairing request.
-
-```typescript
-// Input
-{
-  action: 'list' | 'approve' | 'revoke';
-  userId?: number;  // Required for approve/revoke
-}
-
-// Output
-{
-  success: boolean;
-  pairedUsers?: number[];
-  pendingRequests?: Array<{
-    userId: number;
-    username: string;
-    requestedAt: string;
-  }>;
-}
-```
-
-### `telegram_status`
-
-Get bot status and statistics.
-
-```typescript
-// Input
-{}
-
-// Output
-{
-  running: boolean;
-  uptime?: number;  // seconds
-  pairedUsers: number;
-  pendingMessages: number;
-  lastActivity?: string;
-}
+# 7. Send a reply
+# telegram_send { userId: 12345, text: "Hello from Mudpuppy!" }
 ```
 
 ## CLI Commands
 
 ```bash
 # Bot management
-mudpuppy telegram start     # Start bot daemon
-mudpuppy telegram stop      # Stop bot daemon
-mudpuppy telegram status    # Show bot status
+mudpuppy telegram start       # Start bot daemon
+mudpuppy telegram stop        # Stop bot daemon
+mudpuppy telegram restart     # Restart bot daemon
+mudpuppy telegram status      # Show bot status
 
 # Configuration
 mudpuppy telegram set-token <token>  # Set bot token (stored in secrets.env)
-mudpuppy telegram enable             # Enable Telegram integration
-mudpuppy telegram disable            # Disable Telegram integration
-
-# Pairing
-mudpuppy telegram pair list          # List paired users
-mudpuppy telegram pair approve <id>  # Approve pending request
-mudpuppy telegram pair revoke <id>   # Revoke user access
 ```
 
 ## Security
 
 ### Pairing System
 
-1. User sends `/start` to bot
-2. Bot queues pairing request
-3. Local approval required via CLI or tool
-4. Approved users stored in config
+1. User sends `/start` to bot on Telegram
+2. Bot creates a pending pairing request in SQLite
+3. Local approval required via MCP tool or CLI
+4. Approved users stored in `telegram_users` table
 5. Only paired users can send messages
+6. Unpaired users receive a prompt to use `/start`
 
 ### Token Storage
 
@@ -172,10 +118,15 @@ Bot token stored in `~/.mudpuppy/secrets.env`:
 TELEGRAM_BOT_TOKEN=123456789:ABC-DEFgh...
 ```
 
-This file is:
-- Never committed to git
-- Readable only by owner
-- Loaded by bot daemon at startup
+This file is never committed to git and is readable only by the owner.
+
+## Database
+
+All Telegram state stored in `~/.mudpuppy/data/telegram.db` (SQLite with WAL mode):
+
+- `telegram_users` — Paired users with message counts
+- `telegram_messages` — Message queue with read/unread tracking
+- `pending_approvals` — Pairing request queue
 
 ## File Locations
 
@@ -183,25 +134,30 @@ This file is:
 ~/.mudpuppy/
 ├── bot/
 │   ├── telegram.pid      # Daemon PID file
-│   └── telegram.sock     # Unix socket for IPC
-├── telegram-queue.jsonl  # Incoming message queue
-├── telegram-responses.jsonl  # Outgoing message queue
+│   ├── telegram.sock     # Unix socket for IPC
+│   └── telegram.log      # Daemon log output
+├── data/
+│   └── telegram.db       # SQLite message queue + pairings
 └── secrets.env           # Bot token (gitignored)
 ```
 
-## Implementation Status
+## Source Files
 
-- [ ] Bot daemon with grammY
-- [ ] Unix socket IPC
-- [ ] Message queue (JSONL)
-- [ ] `telegram_poll` tool
-- [ ] `telegram_send` tool
-- [ ] `telegram_pair` tool
-- [ ] `telegram_status` tool
-- [ ] CLI commands
-- [ ] Pairing flow with approval
+```
+src/telegram/
+├── index.ts      # Module re-exports
+├── types.ts      # Type definitions (TelegramMessage, BotStatus, etc.)
+├── protocol.ts   # IPC request/response format
+├── daemon.ts     # Daemon lifecycle management
+├── ipc.ts        # Unix socket client
+└── bot.ts        # grammY bot daemon (entry point)
 
-## See Also
+src/tools/
+└── telegram.ts   # 4 MCP tool registrations
+```
 
-- [PRD.md](../../PRD.md) - Full requirements
-- [PROGRESS.md](../../PROGRESS.md) - Implementation progress
+## Related Documentation
+
+- [API Reference](./API.md)
+- [Implementation Details](./IMPLEMENTATION.md)
+- [Testing Strategy](./TESTING.md)

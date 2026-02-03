@@ -303,30 +303,37 @@ This project extends Claude Code by:
 **Implementation (v2 MCP-first architecture):**
 - `src/index.ts` - Main exports
 - `src/config.ts` - Configuration system
+- `src/secrets.ts` - Secrets manager
 - `src/mcp-server.ts` - MCP server entry point
-- `src/cli/index.ts` - CLI commands
-- `src/tools/index.ts` - Tool registry (config_get, config_set)
+- `src/cli/index.ts` - CLI commands (init, config, telegram, soul, heartbeat)
+- `src/tools/index.ts` - Tool registry
+- `src/tools/telegram.ts` - Telegram MCP tools (4 tools)
+- `src/tools/memory.ts` - Memory MCP tools (5 tools)
+- `src/tools/soul.ts` - Soul MCP tools (2 tools)
+- `src/tools/heartbeat.ts` - Heartbeat MCP tools (3 tools)
+- `src/telegram/` - Bot daemon, IPC, types, protocol
+- `src/memory/` - Hybrid search, embeddings, daily log, indexer
+- `src/approval/` - Generic approval system (SQLite)
+- `src/soul/` - Templates, diff, file I/O
+- `src/audit/` - JSONL audit logger
+- `src/autonomy/` - Heartbeat scheduler, parser, types
 
 **MCP Integration:**
 - `.mcp.json` - MCP server configuration for Claude Code
 
 **Documentation Status:**
-- ✅ `docs/config/` - Updated (README, API, IMPLEMENTATION, TESTING)
-- 🔄 `docs/telegram/` - Planned architecture documented (README only)
-- ⬜ `docs/soul/` - Not started (Phase 3)
-- ⬜ `docs/memory/` - Not started (Phase 2)
-- ⬜ `docs/autonomy/` - Not started (Phase 4)
+- ✅ `docs/config/` - Complete (README, API, IMPLEMENTATION, TESTING)
+- ✅ `docs/telegram/` - Complete (README, API, IMPLEMENTATION, TESTING)
+- ✅ `docs/memory/` - Complete (README, API, IMPLEMENTATION, TESTING)
+- ✅ `docs/soul/` - Complete (README, API, IMPLEMENTATION, TESTING)
+- ✅ `docs/autonomy/` - Complete (README, API, IMPLEMENTATION, TESTING)
 - ⬜ `docs/security/` - Not started (Phase 5)
 
-**Status:** Phase 0 in progress (MCP server foundation). v1 skill-first approach archived.
+**Status:** Phases 0-4 complete. Phase 5 (Skill Layer & Polish) next.
 
 **Next Steps:**
-1. Complete Phase 0: MCP server skeleton, CLI, workspace init
-2. Phase 1: Telegram tools (telegram_poll, telegram_send, telegram_pair, telegram_status)
-3. Phase 2: Memory tools
-4. See PRD.md for detailed requirements
-
-**Note:** Memory patterns (typed entries, deduplication, access logging) were adopted from atlas-agent and are documented in PRD.md.
+1. Phase 5: Skill layer & polish
+2. See PRD.md for detailed requirements
 
 ## Development Philosophy
 

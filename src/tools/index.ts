@@ -125,6 +125,8 @@ export async function initTools(): Promise<void> {
   // Dynamically import tool modules to register them
   await import('./telegram.js');
   await import('./memory.js');
+  await import('./soul.js');
+  await import('./heartbeat.js');
 }
 
 // Auto-initialize when module is loaded (for MCP server)

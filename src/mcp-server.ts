@@ -108,6 +108,25 @@ async function main() {
     // Non-fatal: server continues without indexer
   }
 
+  // Start heartbeat scheduler if configured
+  try {
+    const config2 = new ConfigManager();
+    if (config2.getValue<boolean>('heartbeat.enabled')) {
+      const { HeartbeatScheduler } = await import('./autonomy/scheduler.js');
+      const scheduler = new HeartbeatScheduler({
+        interval: config2.getValue<number>('heartbeat.interval') ?? 1800000,
+        activeHours: config2.getValue('heartbeat.activeHours'),
+        maxActionsPerBeat: config2.getValue<number>('heartbeat.maxActionsPerBeat') ?? 5,
+        requireApproval: config2.getValue<boolean>('heartbeat.requireApproval') ?? true,
+      });
+      scheduler.start();
+      console.error(`Mudpuppy heartbeat started (interval: ${scheduler.getState().interval}ms)`);
+    }
+  } catch (err) {
+    console.error('Failed to start heartbeat scheduler:', err);
+    // Non-fatal: server continues without heartbeat
+  }
+
   // Start server with stdio transport
   const transport = new StdioServerTransport();
   await server.connect(transport);

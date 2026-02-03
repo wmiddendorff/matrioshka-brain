@@ -29,3 +29,15 @@ export * from './telegram/index.js';
 
 // === MEMORY EXPORTS ===
 export * from './memory/index.js';
+
+// === APPROVAL EXPORTS ===
+export * from './approval/index.js';
+
+// === SOUL EXPORTS ===
+export * from './soul/index.js';
+
+// === AUDIT EXPORTS ===
+export * from './audit/index.js';
+
+// === AUTONOMY EXPORTS ===
+export * from './autonomy/index.js';

@@ -15,6 +15,9 @@ import {
   getDaemonInfo,
   checkConnection,
 } from '../telegram/index.js';
+import { getDefaultTemplate } from '../soul/templates.js';
+import type { SoulFileType } from '../soul/types.js';
+import { SOUL_FILE_MAP } from '../soul/types.js';
 
 const VERSION = '2.0.0';
 
@@ -37,6 +40,17 @@ Telegram:
   telegram restart        Restart Telegram bot daemon
   telegram status         Show bot status
   telegram set-token      Set bot token (will prompt)
+
+Soul:
+  soul list               List pending soul proposals
+  soul show <id>          Show proposal details and diff
+  soul approve <id>       Approve and apply a proposal
+  soul deny <id>          Deny a proposal
+
+Heartbeat:
+  heartbeat status        Show heartbeat scheduler state
+  heartbeat pause         Pause the heartbeat
+  heartbeat resume        Resume the heartbeat
 
 Environment:
   MUDPUPPY_HOME           Workspace directory (default: ~/.mudpuppy)
@@ -96,65 +110,16 @@ async function createDefaultWorkspaceFiles(): Promise<void> {
   const fs = await import('fs');
   const path = await import('path');
 
-  const files: Record<string, string> = {
-    'workspace/SOUL.md': `# Soul
+  // Soul/identity files use shared templates
+  const soulFiles: SoulFileType[] = ['soul', 'identity', 'agents', 'user'];
+  const files: Record<string, string> = {};
 
-## Core Essence
-I am Mudpuppy, an AI companion that learns and evolves through our interactions.
-Like my namesake salamander, I never stop growing and adapting.
+  for (const file of soulFiles) {
+    files[`workspace/${SOUL_FILE_MAP[file]}`] = getDefaultTemplate(file);
+  }
 
-## Communication Style
-- Direct and helpful
-- Curious and engaged
-- Respectful of boundaries
-
-## Boundaries
-- I ask before taking significant actions
-- I maintain user privacy
-- I acknowledge my limitations
-
-## Evolution
-*This section will grow as I learn about you and our interactions.*
-`,
-
-    'workspace/IDENTITY.md': `# Identity
-
-- **Name**: Mudpuppy
-- **Type**: AI Companion
-- **Vibe**: Curious, helpful, always learning
-- **Emoji**: 🐾
-`,
-
-    'workspace/AGENTS.md': `# Operating Instructions
-
-## Memory Protocol
-- Log significant events to daily memory files
-- Update MEMORY.md with important facts
-- Search memory before answering questions about past interactions
-
-## Safety Rules
-- Never execute commands without approval
-- Ask for clarification when uncertain
-- Respect user privacy and data boundaries
-
-## Autonomous Behavior
-- Check HEARTBEAT.md for pending tasks
-- Only act during active hours (if configured)
-- Always log actions to audit trail
-`,
-
-    'workspace/USER.md': `# User Profile
-
-*Add information about yourself here for better personalization.*
-
-## Preferences
-- (Your preferences)
-
-## Context
-- (Information about your work, projects, etc.)
-`,
-
-    'workspace/MEMORY.md': `# Long-term Memory
+  // Non-soul workspace files
+  files['workspace/MEMORY.md'] = `# Long-term Memory
 
 *Curated facts and learnings that persist across sessions.*
 
@@ -166,9 +131,9 @@ Like my namesake salamander, I never stop growing and adapting.
 
 ## Insights
 - (Patterns and learnings will appear here)
-`,
+`;
 
-    'workspace/HEARTBEAT.md': `# Heartbeat Tasks
+  files['workspace/HEARTBEAT.md'] = `# Heartbeat Tasks
 
 ## Recurring
 - [ ] Check for important notifications
@@ -178,9 +143,9 @@ Like my namesake salamander, I never stop growing and adapting.
 
 ---
 HEARTBEAT_OK
-`,
+`;
 
-    'tools/manifest.md': `# Mudpuppy Tools
+  files['tools/manifest.md'] = `# Mudpuppy Tools
 
 ## Config
 | Tool | Purpose | Requires Approval |
@@ -216,8 +181,7 @@ HEARTBEAT_OK
 | heartbeat_status | Get heartbeat status | No |
 | heartbeat_pause | Pause heartbeat | No |
 | heartbeat_resume | Resume heartbeat | No |
-`,
-  };
+`;
 
   for (const [relativePath, content] of Object.entries(files)) {
     const fullPath = resolvePath(relativePath);
@@ -461,6 +425,255 @@ function cmdTelegramSetToken(token?: string): void {
   }
 }
 
+// ============================================
+// Soul Commands
+// ============================================
+
+async function cmdSoul(args: string[]): Promise<void> {
+  const subCmd = args[0];
+
+  switch (subCmd) {
+    case 'list':
+      await cmdSoulList();
+      break;
+
+    case 'show':
+      await cmdSoulShow(args[1]);
+      break;
+
+    case 'approve':
+      await cmdSoulApprove(args[1]);
+      break;
+
+    case 'deny':
+      await cmdSoulDeny(args[1]);
+      break;
+
+    default:
+      console.error(`Unknown soul command: ${subCmd}`);
+      console.error('Available commands: list, show, approve, deny');
+      process.exit(1);
+  }
+}
+
+async function cmdSoulList(): Promise<void> {
+  const { getApprovalDb, listPendingApprovals, expireOldApprovals } = await import('../approval/db.js');
+
+  const db = getApprovalDb();
+  expireOldApprovals(db);
+  const pending = listPendingApprovals(db, 'soul_update');
+
+  if (pending.length === 0) {
+    console.log('No pending soul proposals.');
+    return;
+  }
+
+  console.log(`Pending soul proposals (${pending.length}):\n`);
+  for (const approval of pending) {
+    const payload = approval.payload as { file: string; filename: string; reason: string };
+    const age = Math.round((Date.now() - approval.createdAt) / 60000);
+    console.log(`  ${approval.id}`);
+    console.log(`    File: ${payload.filename} (${payload.file})`);
+    console.log(`    Reason: ${payload.reason}`);
+    console.log(`    Created: ${age}m ago`);
+    console.log();
+  }
+
+  console.log('Use "mudpuppy soul show <id>" to see the diff.');
+  console.log('Use "mudpuppy soul approve <id>" or "mudpuppy soul deny <id>".');
+}
+
+async function cmdSoulShow(id?: string): Promise<void> {
+  if (!id) {
+    console.error('Usage: mudpuppy soul show <id>');
+    process.exit(1);
+  }
+
+  const { getApprovalDb, getApproval } = await import('../approval/db.js');
+
+  const db = getApprovalDb();
+  const approval = getApproval(db, id);
+
+  if (!approval) {
+    console.error(`Proposal not found: ${id}`);
+    process.exit(1);
+  }
+
+  const payload = approval.payload as {
+    file: string;
+    filename: string;
+    reason: string;
+    diff: string;
+    newContent: string;
+  };
+
+  console.log(`Proposal: ${approval.id}`);
+  console.log(`Status: ${approval.status}`);
+  console.log(`File: ${payload.filename} (${payload.file})`);
+  console.log(`Reason: ${payload.reason}`);
+  console.log(`Created: ${new Date(approval.createdAt).toLocaleString()}`);
+  console.log();
+  console.log('--- Diff ---');
+  console.log(payload.diff);
+}
+
+async function cmdSoulApprove(id?: string): Promise<void> {
+  if (!id) {
+    console.error('Usage: mudpuppy soul approve <id>');
+    process.exit(1);
+  }
+
+  const { getApprovalDb, getApproval, updateApprovalStatus } = await import('../approval/db.js');
+  const { writeSoulFile } = await import('../soul/files.js');
+
+  const db = getApprovalDb();
+  const approval = getApproval(db, id);
+
+  if (!approval) {
+    console.error(`Proposal not found: ${id}`);
+    process.exit(1);
+  }
+
+  if (approval.status !== 'pending') {
+    console.error(`Proposal is already ${approval.status}`);
+    process.exit(1);
+  }
+
+  const payload = approval.payload as {
+    file: 'soul' | 'agents';
+    filename: string;
+    newContent: string;
+    reason: string;
+    diff: string;
+  };
+
+  // Write the new content
+  writeSoulFile(payload.file, payload.newContent);
+  updateApprovalStatus(db, id, 'approved');
+
+  console.log(`Approved: ${payload.filename} updated.`);
+  console.log(`Reason: ${payload.reason}`);
+
+  // Log to daily memory if available
+  try {
+    const { appendToDailyLog } = await import('../memory/daily-log.js');
+    appendToDailyLog(
+      `Soul file ${payload.filename} updated: ${payload.reason}`,
+      'event',
+      'soul-approval'
+    );
+  } catch {
+    // Non-fatal: daily log may not be available
+  }
+}
+
+async function cmdSoulDeny(id?: string): Promise<void> {
+  if (!id) {
+    console.error('Usage: mudpuppy soul deny <id>');
+    process.exit(1);
+  }
+
+  const { getApprovalDb, getApproval, updateApprovalStatus } = await import('../approval/db.js');
+
+  const db = getApprovalDb();
+  const approval = getApproval(db, id);
+
+  if (!approval) {
+    console.error(`Proposal not found: ${id}`);
+    process.exit(1);
+  }
+
+  if (approval.status !== 'pending') {
+    console.error(`Proposal is already ${approval.status}`);
+    process.exit(1);
+  }
+
+  updateApprovalStatus(db, id, 'denied');
+
+  const payload = approval.payload as { filename: string; reason: string };
+  console.log(`Denied: proposal for ${payload.filename}.`);
+}
+
+// ============================================
+// Heartbeat Commands
+// ============================================
+
+async function cmdHeartbeat(args: string[]): Promise<void> {
+  const subCmd = args[0];
+
+  switch (subCmd) {
+    case 'status':
+      await cmdHeartbeatStatus();
+      break;
+
+    case 'pause':
+      cmdHeartbeatPause();
+      break;
+
+    case 'resume':
+      cmdHeartbeatResume();
+      break;
+
+    default:
+      console.error(`Unknown heartbeat command: ${subCmd}`);
+      console.error('Available commands: status, pause, resume');
+      process.exit(1);
+  }
+}
+
+async function cmdHeartbeatStatus(): Promise<void> {
+  const config = new ConfigManager();
+  const enabled = config.getValue<boolean>('heartbeat.enabled') ?? false;
+  const interval = config.getValue<number>('heartbeat.interval') ?? 1800000;
+  const requireApproval = config.getValue<boolean>('heartbeat.requireApproval') ?? true;
+  const activeHours = config.getValue<{ start: string; end: string; timezone: string }>('heartbeat.activeHours');
+
+  console.log(`Heartbeat: ${enabled ? 'Enabled' : 'Disabled'}`);
+  console.log(`Interval: ${interval / 60000} minutes`);
+  console.log(`Require Approval: ${requireApproval ? 'Yes' : 'No'}`);
+  console.log(`Max Actions/Beat: ${config.getValue<number>('heartbeat.maxActionsPerBeat') ?? 5}`);
+
+  if (activeHours) {
+    console.log(`Active Hours: ${activeHours.start} - ${activeHours.end} (${activeHours.timezone})`);
+  } else {
+    console.log(`Active Hours: Always`);
+  }
+
+  // Try to read HEARTBEAT.md for pending tasks
+  try {
+    const { existsSync, readFileSync } = await import('fs');
+    const heartbeatPath = resolvePath('workspace/HEARTBEAT.md');
+    if (existsSync(heartbeatPath)) {
+      const content = readFileSync(heartbeatPath, 'utf-8');
+      const { parseHeartbeatMd } = await import('../autonomy/parser.js');
+      const tasks = parseHeartbeatMd(content);
+      const executable = tasks.filter((t) => t.toolCall).length;
+      const manual = tasks.filter((t) => !t.toolCall).length;
+      console.log();
+      console.log(`Pending tasks: ${tasks.length} (${executable} executable, ${manual} manual)`);
+    }
+  } catch {
+    // Non-fatal
+  }
+
+  if (!enabled) {
+    console.log();
+    console.log('Enable with: mudpuppy config set heartbeat.enabled true');
+  }
+}
+
+function cmdHeartbeatPause(): void {
+  console.log('Note: The heartbeat runs inside the MCP server process.');
+  console.log('Use the heartbeat_pause MCP tool to pause a running heartbeat.');
+  console.log('Or disable it: mudpuppy config set heartbeat.enabled false');
+}
+
+function cmdHeartbeatResume(): void {
+  console.log('Note: The heartbeat runs inside the MCP server process.');
+  console.log('Use the heartbeat_resume MCP tool to resume a paused heartbeat.');
+  console.log('Or enable it: mudpuppy config set heartbeat.enabled true');
+}
+
 // Parse and execute command
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -506,6 +719,14 @@ async function main(): Promise<void> {
 
     case 'telegram':
       await cmdTelegram(args.slice(1));
+      break;
+
+    case 'soul':
+      await cmdSoul(args.slice(1));
+      break;
+
+    case 'heartbeat':
+      await cmdHeartbeat(args.slice(1));
       break;
 
     default:

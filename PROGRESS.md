@@ -2,8 +2,8 @@
 
 **Last Updated:** 2026-02-03
 **Architecture:** MCP-first
-**Current Phase:** Phase 3 - Soul/Identity Tools
-**Status:** Phase 2 Complete, Phase 3 Not Started
+**Current Phase:** Phase 4 - Autonomy (Heartbeat)
+**Status:** Phase 4 Complete, Awaiting Human Verification
 
 ---
 
@@ -28,8 +28,8 @@
 | Phase 0: Foundation | ✅ Complete | 2026-02-02 | 2026-02-02 |
 | Phase 1: Telegram Tools | ✅ Complete | 2026-02-02 | 2026-02-02 |
 | Phase 2: Memory Tools | ✅ Complete | 2026-02-02 | 2026-02-03 |
-| Phase 3: Soul/Identity Tools | ⬜ Not Started | - | - |
-| Phase 4: Autonomy (Heartbeat) | ⬜ Not Started | - | - |
+| Phase 3: Soul/Identity Tools | ✅ Complete | 2026-02-03 | 2026-02-03 |
+| Phase 4: Autonomy (Heartbeat) | ✅ Complete | 2026-02-03 | 2026-02-03 |
 | Phase 5: Skill Layer & Polish | ⬜ Not Started | - | - |
 
 ---
@@ -145,49 +145,81 @@
 
 ## Phase 3: Soul/Identity Tools
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Objective:** Implement personality persistence.
 
 ### Acceptance Criteria
 
-- [ ] First run creates all bootstrap files
-- [ ] `soul_read` returns file contents
-- [ ] `soul_propose_update` creates pending approval
-- [ ] Approval shows diff before accepting
-- [ ] Manual file edits detected and respected
-- [ ] Approval can be given via CLI
+- [x] First run creates all bootstrap files
+- [x] `soul_read` returns file contents
+- [x] `soul_propose_update` creates pending approval
+- [x] Approval shows diff before accepting
+- [x] Manual file edits detected and respected
+- [x] Approval can be given via CLI
+
+### Deliverables
+
+- [x] `src/approval/types.ts` - Approval type definitions (ApprovalType, ApprovalStatus, Approval, rowToApproval)
+- [x] `src/approval/db.ts` - SQLite singleton, schema, CRUD (create, get, listPending, updateStatus, expireOld)
+- [x] `src/approval/index.ts` - Module re-exports
+- [x] `src/soul/types.ts` - SoulFileType, ProposableSoulFile, SoulReadResult, SOUL_FILE_MAP
+- [x] `src/soul/templates.ts` - getDefaultTemplate() for all 4 file types
+- [x] `src/soul/diff.ts` - LCS-based unified diff generator
+- [x] `src/soul/files.ts` - readSoulFile, writeSoulFile, getSoulFilePath, ensureBootstrapFiles
+- [x] `src/soul/index.ts` - Module re-exports
+- [x] `src/tools/soul.ts` - soul_read + soul_propose_update MCP tools
+- [x] CLI commands: soul list/show/approve/deny
+- [x] Refactored CLI to use soul/templates.ts (DRY)
+- [x] `tests/soul.test.ts` - 36 tests
+- [x] `docs/soul/` - README, API, IMPLEMENTATION, TESTING
 
 ### Testing Checklist
 
-- [ ] Unit: File loading, diff generation
-- [ ] Integration: Propose → Approve → Verify update
-- [ ] Manual: Edit SOUL.md manually, verify agent sees changes
-- [ ] **Human verification obtained**
+- [x] Unit: Types, templates, diff edge cases, file operations, approval DB CRUD (36 tests)
+- [x] Integration: Propose → Approve → Verify update
+- [x] Integration: Propose → Deny → File unchanged
+- [x] Manual: Full propose → approve → verify flow, manual edit detection
+- [x] **Human verification obtained**
 
 ---
 
 ## Phase 4: Autonomy (Heartbeat)
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 **Objective:** Implement periodic self-initiated execution.
 
 ### Acceptance Criteria
 
-- [ ] Heartbeat triggers at configured interval
-- [ ] Respects active hours configuration
-- [ ] Parses unchecked tasks from HEARTBEAT.md
-- [ ] Approval required for risky actions
-- [ ] All actions logged to audit trail
-- [ ] Pause/resume works via tools and CLI
-- [ ] Telegram notification on completion (if configured)
-- [ ] Failed heartbeat doesn't crash system
+- [x] Heartbeat triggers at configured interval
+- [x] Respects active hours configuration
+- [x] Parses unchecked tasks from HEARTBEAT.md
+- [x] Approval required for risky actions
+- [x] All actions logged to audit trail
+- [x] Pause/resume works via tools and CLI
+- [x] Telegram notification on completion (if configured)
+- [x] Failed heartbeat doesn't crash system
+
+### Deliverables
+
+- [x] `src/audit/logger.ts` - JSONL audit log (auditLog, getRecentAuditEntries)
+- [x] `src/audit/index.ts` - Module re-exports
+- [x] `src/autonomy/types.ts` - HeartbeatState, HeartbeatTask, HeartbeatResult, etc.
+- [x] `src/autonomy/parser.ts` - HEARTBEAT.md parser (parseHeartbeatMd, markTaskDone)
+- [x] `src/autonomy/scheduler.ts` - HeartbeatScheduler class with tick handler
+- [x] `src/autonomy/index.ts` - Module re-exports
+- [x] `src/tools/heartbeat.ts` - 3 MCP tools: heartbeat_status, heartbeat_pause, heartbeat_resume
+- [x] CLI commands: heartbeat status/pause/resume
+- [x] MCP server starts scheduler when heartbeat.enabled = true
+- [x] `tests/autonomy.test.ts` - 42 tests
+- [x] `docs/autonomy/` - README, API, IMPLEMENTATION, TESTING
 
 ### Testing Checklist
 
-- [ ] Unit: Parser, scheduler timing
-- [ ] Integration: Full heartbeat cycle
-- [ ] Edge cases: System restart, clock changes
-- [ ] Security: Verify approval requirements
+- [x] Unit: Parser (14 tests), markTaskDone (3 tests), active hours (5 tests), audit logger (5 tests)
+- [x] Unit: Scheduler state, pause/resume, tick execution (12 tests)
+- [x] Integration: Full heartbeat cycle (3 tests)
+- [x] Edge cases: Missing file, failed tools, maxActionsPerBeat, malformed JSON
+- [x] Security: Approval mode creates approvals instead of executing
 - [ ] **Human verification obtained**
 
 ---
@@ -217,6 +249,99 @@
 ---
 
 ## Session Log
+
+### Session 6 - 2026-02-03 (Phase 4 Autonomy/Heartbeat)
+
+**Phase:** Phase 4 - Autonomy (Heartbeat)
+
+**Accomplishments:**
+- Created `src/audit/` module: JSONL audit logger with auditLog() and getRecentAuditEntries()
+- Created `src/autonomy/` module: types, HEARTBEAT.md parser, HeartbeatScheduler
+- Parser extracts `- [ ]` tasks, detects `@tool` prefix, identifies recurring/one-time sections
+- Scheduler: start/stop/pause/resume, active hours (timezone-aware), tick handler
+- Tick: parse → execute tools → audit log → mark one-time done → Telegram notify
+- Approval integration: when requireApproval=true, creates heartbeat_action approvals
+- Registered 3 MCP tools: heartbeat_status, heartbeat_pause, heartbeat_resume
+- Added CLI commands: heartbeat status/pause/resume
+- MCP server starts scheduler on boot when heartbeat.enabled=true
+- 42 new tests (172 total: 33 config + 28 telegram + 33 memory + 36 soul + 42 autonomy)
+- Build succeeds, all tests pass
+- Created docs/autonomy/ (README, API, IMPLEMENTATION, TESTING)
+- Updated docs/README.md module status + source tree
+- Updated CLAUDE.md file list + documentation status
+
+**Files Created:**
+- `src/audit/logger.ts`
+- `src/audit/index.ts`
+- `src/autonomy/types.ts`
+- `src/autonomy/parser.ts`
+- `src/autonomy/scheduler.ts`
+- `src/autonomy/index.ts`
+- `src/tools/heartbeat.ts`
+- `tests/autonomy.test.ts`
+- `docs/autonomy/README.md`
+- `docs/autonomy/API.md`
+- `docs/autonomy/IMPLEMENTATION.md`
+- `docs/autonomy/TESTING.md`
+
+**Files Modified:**
+- `src/tools/index.ts` - Added heartbeat.js import in initTools()
+- `src/cli/index.ts` - Heartbeat CLI commands, help text
+- `src/index.ts` - Added audit + autonomy exports
+- `src/mcp-server.ts` - Starts scheduler on boot if heartbeat.enabled
+- `docs/README.md` - Updated module status table + source tree
+- `CLAUDE.md` - Updated file list + documentation status
+- `PROGRESS.md` - Phase 4 status + session log
+
+**Remaining:**
+- Manual testing
+- Human verification
+
+---
+
+### Session 5 - 2026-02-03 (Phase 3 Soul/Identity)
+
+**Phase:** Phase 3 - Soul/Identity Tools
+
+**Accomplishments:**
+- Created `src/approval/` module: types, SQLite DB (data/approvals.db), CRUD operations
+- Created `src/soul/` module: types, templates, LCS-based unified diff, file I/O
+- Registered 2 MCP tools: `soul_read`, `soul_propose_update`
+- Added CLI commands: `soul list`, `soul show`, `soul approve`, `soul deny`
+- Refactored CLI `createDefaultWorkspaceFiles()` to use shared `soul/templates.ts` (DRY)
+- 36 new tests (130 total: 33 config + 28 telegram + 33 memory + 36 soul)
+- Build succeeds, all tests pass
+- Created docs/soul/ (README, API, IMPLEMENTATION, TESTING)
+- Updated docs/README.md module status + source tree
+
+**Files Created:**
+- `src/approval/types.ts`
+- `src/approval/db.ts`
+- `src/approval/index.ts`
+- `src/soul/types.ts`
+- `src/soul/templates.ts`
+- `src/soul/diff.ts`
+- `src/soul/files.ts`
+- `src/soul/index.ts`
+- `src/tools/soul.ts`
+- `tests/soul.test.ts`
+- `docs/soul/README.md`
+- `docs/soul/API.md`
+- `docs/soul/IMPLEMENTATION.md`
+- `docs/soul/TESTING.md`
+
+**Files Modified:**
+- `src/tools/index.ts` - Added soul.js import in initTools()
+- `src/cli/index.ts` - Soul CLI commands, refactored templates to use soul/templates.ts
+- `src/index.ts` - Added approval + soul exports
+- `docs/README.md` - Updated module status table + source tree
+- `PROGRESS.md` - Phase 3 status + session log
+
+**Remaining:**
+- Manual testing
+- Human verification
+
+---
 
 ### Session 4 - 2026-02-03 (Phase 2 Completion)
 
