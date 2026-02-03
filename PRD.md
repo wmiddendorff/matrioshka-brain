@@ -1,982 +1,1104 @@
-# Product Requirements Document: Mudpuppy
+# Product Requirements Document: Mudpuppy v2
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** 2026-02-02
 **Status:** Draft
-**Author:** AI-assisted with user input
+**Architecture:** MCP-first (revised from v1 skill-first approach)
+
+---
 
 ## Executive Summary
 
-Mudpuppy is a **security-hardened autonomous AI agent** built as a **Claude Code skill**, designed to provide persistent memory, evolving personality, and controlled autonomous execution. The project extends Claude Code with Telegram integration, allowing bidirectional remote control while using your existing Claude subscription (not API). It runs side-by-side with the existing OpenClaw installation, offering a more secure architecture with approval-first execution model while maintaining compatibility with OpenClaw's file-based memory and identity concepts.
+Mudpuppy is a **security-hardened autonomous AI agent** that extends Claude Code with persistent memory, evolving personality, and controlled autonomous execution. It provides bidirectional remote control via Telegram while using your existing Claude subscription.
 
-**Key Architectural Decision:** Mudpuppy is built as a Claude Code skill rather than a standalone agent, enabling use of your Claude.ai subscription instead of API tokens, while providing full remote control via Telegram.
+**Key Architectural Decision (v2):** Mudpuppy is built as an **MCP server first**, exposing all capabilities as tools. The Claude Code skill becomes a thin persona/workflow layer on top, not the foundation. This provides clean separation of concerns and better portability.
+
+---
 
 ## Vision Statement
 
-Create a fully autonomous AI agent that learns and evolves through use, extending Claude Code with:
+Create a fully autonomous AI agent that learns and evolves through use:
 - **Persistent memory** that accumulates knowledge over time
 - **Consistent identity** through the Soul/Identity separation framework
-- **Controlled autonomy** via heartbeat and cron scheduling with security-first design
+- **Controlled autonomy** via heartbeat and cron scheduling
 - **Multi-surface presence** starting with Telegram integration
 - **Human-readable state** through file-based architecture
 
-## Goals & Non-Goals
+---
 
-### Goals
-1. **Security-first autonomy**: Enable autonomous execution without compromising user control or system safety
-2. **Learning agent**: Build genuine knowledge accumulation through hybrid search memory system
-3. **Persistent identity**: Implement evolving personality through Soul/Identity framework
-4. **Extensible platform**: Create plugin architecture that extends Claude Code cleanly
-5. **Multi-purpose utility**: Support personal assistant, development companion, research assistant, and general automation use cases
+## Architecture Overview
 
-### Non-Goals
-1. **Not a cloud service**: No multi-tenant SaaS deployment, single-user only
-2. **Not replacing OpenClaw**: Runs side-by-side, no migration of existing OpenClaw data required
-3. **Not feature parity**: Selective implementation of OpenClaw features with security focus
-4. **Not modifying Claude Code core**: Plugin-based extension, no core code changes
-
-## User Personas
-
-### Primary: Power User / Developer
-- Runs both OpenClaw and Mudpuppy
-- Comfortable with command line and configuration files
-- Values security, privacy, and transparency
-- Wants autonomous assistance without losing control
-- Uses agent across multiple contexts: coding, research, personal tasks
-
-### Use Cases
-1. **Personal Assistant**: Task management, reminders, information lookup, daily automation
-2. **Development Companion**: Code review, testing, documentation, bug tracking
-3. **Research Assistant**: Information gathering, synthesis, note-taking, knowledge management
-4. **General Automation**: File operations, web scraping, data processing, scheduled tasks
-
-## Product Overview
-
-### Core Architecture
-
-**Deployment Model:** Single-user local machine
-**Extension Method:** Claude Code skill (loaded alongside Claude CLI)
-**LLM Integration:** Uses existing Claude Code subscription (NOT Anthropic API)
-**Security Model:** Approval-first (all autonomous actions require pre-approval or run read-only)
-**Technology Stack:** TypeScript/Node.js
-**Workspace Location:** `~/.mudpuppy/`
-
-**Key Insight:** By building as a Claude Code skill, Mudpuppy uses your existing Claude subscription, stays ToS-compliant, and enables full bidirectional control via Telegram.
-
-### System Components
+### v1 vs v2 Comparison
 
 ```
+v1 (Skill-First) - DEPRECATED:
+┌─────────────┐    JSONL     ┌─────────────┐
+│ Telegram Bot│ ←──────────→ │ Claude Code │
+│ (standalone)│   files      │   (skill)   │
+└─────────────┘              └─────────────┘
+Problem: Skill reads files, bot writes files, messy coupling
+
+v2 (MCP-First) - NEW:
 ┌─────────────────────────────────────────────────────┐
-│   You (via CLI or Telegram)                        │
-└─────────────┬───────────────────────────────────────┘
-              │
-┌─────────────▼───────────────────────────────────────┐
-│   Claude Code CLI (Your Claude.ai Subscription)    │
-│   Active session running "claude" command          │
-└─────────────┬───────────────────────────────────────┘
-              │ Loads skill
-┌─────────────▼───────────────────────────────────────┐
-│          Mudpuppy Skill                             │
-│  ┌────────────┐ ┌────────────┐ ┌─────────────┐    │
-│  │  Memory    │ │   Soul/    │ │  Autonomy   │    │
-│  │  System    │ │  Identity  │ │  Engine     │    │
-│  └────────────┘ └────────────┘ └─────────────┘    │
-│  ┌────────────┐ ┌────────────┐ ┌─────────────┐    │
-│  │  Telegram  │ │   Message  │ │  Approval   │    │
-│  │  Bridge    │ │  Router    │ │  Manager    │    │
-│  └──────┬─────┘ └────────────┘ └─────────────┘    │
-└─────────┼───────────────────────────────────────────┘
-          │ Bidirectional
-┌─────────▼───────────────────────────────────────────┐
-│  Telegram API (Remote Control Interface)           │
-│  • Send messages/commands to Claude                │
-│  • Receive Claude's responses                      │
-│  • Give/deny approvals remotely                    │
-│  • Issue commands (/status, /pause, etc)           │
-└─────────────────────────────────────────────────────┘
+│                    MCP Server                        │
+│            (core - all capabilities)                 │
+├──────────┬──────────┬───────────┬──────────────────┤
+│ telegram │  memory  │   soul    │    heartbeat     │
+│  tools   │  tools   │   tools   │     tools        │
+└────┬─────┴────┬─────┴─────┬─────┴────────┬─────────┘
+     │          │           │              │
+     ▼          ▼           ▼              ▼
+ Telegram    SQLite      Files         Scheduler
+   Bot         DB      (*.md)
 
-Message Flow:
-  Telegram → Mudpuppy → Claude Code → Response → Telegram
-  Local CLI → Claude Code → Response → Local CLI
-  Approval → Sent to BOTH Telegram AND CLI → Approved from either
+┌─────────────────────────────────────────────────────┐
+│              Claude Code + Skill                     │
+│         (consumes MCP tools, adds persona)          │
+└─────────────────────────────────────────────────────┘
 ```
 
-## Claude Code Skill Architecture
+### Design Principles
 
-### Why a Skill?
+1. **MCP-first**: All capabilities exposed as MCP tools with structured I/O
+2. **Capabilities before persona**: Build tools first, add personality layer last
+3. **No file-queue coupling**: Direct communication between components
+4. **Portable by default**: No hardcoded paths, all config via environment
+5. **Text > Brain**: All state persists in human-readable files
+6. **Approval-first security**: Risky actions require explicit approval
 
-**ToS Compliance:** Using the Anthropic API would cost per token. Building as a Claude Code skill allows use of your existing Claude.ai subscription while staying compliant with terms of service.
+---
 
-**How It Works:**
-1. You run `claude` (normal Claude Code CLI)
-2. Mudpuppy skill loads automatically in background
-3. Telegram messages route through your active Claude session
-4. Claude responds using your subscription
-5. Responses route back to Telegram
-6. You can interact from EITHER CLI or Telegram
+## Core Components
 
-### Skill Integration Points
+### 1. MCP Server (Foundation)
 
-**Loaded at startup:**
-- Mudpuppy skill registers with Claude Code
-- Telegram bot starts listening
-- Memory system initializes
-- Soul/Identity files loaded into context
+The MCP server is the core of Mudpuppy. It exposes all capabilities as tools that Claude Code can invoke.
 
-**Message routing:**
-- Incoming Telegram → Appears in Claude session as user message
-- Claude processes (you see it in your terminal)
-- Response → Routes back to Telegram user
-- CLI messages → Normal Claude Code behavior
+**Location:** `~/.mudpuppy/mcp-server/` (or embedded in main package)
 
-**Bidirectional control:**
-- Send commands via Telegram: `/status`, `/pause`, etc.
-- Give approvals via Telegram when away from computer
-- Everything logged and visible in CLI too
+**Tool Categories:**
 
-### Skill Capabilities
+| Category | Tools | Purpose |
+|----------|-------|---------|
+| `telegram_*` | poll, send, pair, status | Telegram messaging |
+| `memory_*` | search, add, get, update, delete, stats | Knowledge persistence |
+| `soul_*` | read, propose_update, get_identity | Personality management |
+| `heartbeat_*` | status, pause, resume, run_now | Autonomous execution |
+| `config_*` | get, set | Configuration management |
 
-Unlike a standalone agent, the skill:
-- ✅ Uses your Claude subscription (not API)
-- ✅ Runs within Claude Code context
-- ✅ Has access to Claude Code tools
-- ✅ Can invoke other Claude Code skills
-- ✅ Fully ToS compliant
-- ✅ Transparent (you see all activity in your terminal)
+**MCP Server Configuration:**
+```json
+{
+  "mcpServers": {
+    "mudpuppy": {
+      "command": "node",
+      "args": ["~/.mudpuppy/dist/mcp-server.js"],
+      "env": {
+        "MUDPUPPY_HOME": "~/.mudpuppy"
+      }
+    }
+  }
+}
+```
 
-## Phase 1: MVP Features
+### 2. Telegram Integration
 
-### 1. Memory Persistence System
+Telegram is a **transport**, not the core. The MCP server provides tools; the Telegram bot is a separate process that the tools communicate with.
 
-**Objective:** Enable the agent to accumulate and recall knowledge across sessions.
+**Architecture:**
+```
+┌─────────────┐  Unix Socket  ┌─────────────┐
+│ MCP Server  │ ←───────────→ │ Telegram Bot│ ←──→ Telegram API
+│ (tools)     │  (IPC)        │ (daemon)    │
+└─────────────┘               └─────────────┘
+```
 
-#### Requirements
+**Bot runs as daemon**, MCP tools communicate with it via Unix socket at `~/.mudpuppy/bot/bot.sock`.
 
-**Functional:**
-- FR1.1: Store memories in human-readable markdown files
-- FR1.2: Daily memory logs at `memory/YYYY-MM-DD.md`
-- FR1.3: Curated long-term memory in `MEMORY.md`
-- FR1.4: Hybrid search combining vector embeddings + keyword matching
-- FR1.5: SQLite database with sqlite-vec extension for vector storage
-- FR1.6: Full-text search (FTS5) for keyword queries
-- FR1.7: Session transcript storage in JSONL format
-- FR1.8: Auto-indexing on file changes (file watcher)
-- FR1.9: Memory search tool accessible to agent during conversations
+### 3. Memory System
 
-**Non-Functional:**
-- NFR1.1: Search results returned in <500ms for 95th percentile
-- NFR1.2: Support up to 100,000 memory entries without degradation
-- NFR1.3: Memory files remain human-readable and editable
-- NFR1.4: Graceful degradation if vector search unavailable
+SQLite database with hybrid search (vector + keyword). Incorporates atlas-agent patterns.
 
-#### Technical Specifications
+**Key Features:**
+- Typed entries (fact, preference, event, insight, task, relationship)
+- Content hash deduplication
+- Access logging for analytics
+- Configurable hybrid search weights
 
-**Storage:**
+### 4. Soul/Identity System
+
+File-based personality persistence. Simple file reads/writes, no complex logic.
+
+**Files:**
+- `SOUL.md` - Core personality (agent can propose changes)
+- `IDENTITY.md` - Metadata (name, emoji, avatar)
+- `AGENTS.md` - Operating instructions
+- `USER.md` - User profile
+
+### 5. Autonomy Engine
+
+Heartbeat scheduler for periodic self-initiated actions.
+
+**Features:**
+- Configurable intervals
+- Active hours (timezone-aware)
+- Task execution from HEARTBEAT.md
+- Approval flow for risky actions
+
+### 6. Skill Layer (Optional)
+
+Thin persona wrapper that consumes MCP tools. Added last, not first.
+
+**Purpose:**
+- Inject personality context
+- Define workflows ("when message arrives, do X")
+- NOT for core capabilities
+
+---
+
+## Workspace Structure
+
 ```
 ~/.mudpuppy/
-├── memory/
-│   ├── 2026-02-02.md          # Daily logs
-│   ├── 2026-02-03.md
+├── config.json              # Global configuration
+├── secrets.env              # Secrets (gitignored, recreate on new VM)
+│
+├── mcp-server/              # MCP server (if separate package)
 │   └── ...
-├── MEMORY.md                   # Curated long-term
-├── agents/
-│   └── default/
-│       ├── sessions/
-│       │   ├── main.jsonl      # Session transcripts
-│       │   └── ...
-│       └── memory.db           # SQLite + embeddings
+│
+├── bot/                     # Telegram bot daemon
+│   ├── bot.pid              # Process ID file
+│   └── bot.sock             # Unix socket for IPC
+│
+├── workspace/               # Agent workspace (human-editable)
+│   ├── SOUL.md              # Core personality
+│   ├── IDENTITY.md          # Agent identifiers
+│   ├── AGENTS.md            # Operating instructions
+│   ├── USER.md              # User profile
+│   ├── MEMORY.md            # Curated long-term memory
+│   ├── HEARTBEAT.md         # Autonomous task list
+│   └── memory/              # Daily logs
+│       └── YYYY-MM-DD.md
+│
+├── data/                    # Application data
+│   ├── memory.db            # SQLite + embeddings
+│   ├── sessions/            # Session transcripts (JSONL)
+│   └── audit.log            # Audit trail
+│
+└── tools/                   # Tool documentation
+    └── manifest.md          # Tool index
 ```
 
-**Database Schema:**
+**Portability Notes:**
+- All paths relative to `$MUDPUPPY_HOME` (defaults to `~/.mudpuppy`)
+- No hardcoded absolute paths in code
+- `secrets.env` must be recreated on new machine
+- SQLite database is file-based, just copy it
+
+---
+
+## MCP Tool Specifications
+
+### Telegram Tools
+
+```typescript
+// telegram_poll - Get pending messages
+{
+  name: "telegram_poll",
+  description: "Get pending Telegram messages from paired users",
+  inputSchema: {
+    type: "object",
+    properties: {
+      limit: { type: "number", default: 10 },
+      markRead: { type: "boolean", default: true }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      messages: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            userId: { type: "number" },
+            username: { type: "string" },
+            text: { type: "string" },
+            timestamp: { type: "number" }
+          }
+        }
+      }
+    }
+  }
+}
+
+// telegram_send - Send message to user
+{
+  name: "telegram_send",
+  description: "Send a message to a paired Telegram user",
+  inputSchema: {
+    type: "object",
+    properties: {
+      userId: { type: "number", required: true },
+      text: { type: "string", required: true },
+      parseMode: { type: "string", enum: ["HTML", "Markdown"], default: "HTML" },
+      replyToMessageId: { type: "number" }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      success: { type: "boolean" },
+      messageId: { type: "number" }
+    }
+  }
+}
+
+// telegram_pair - Handle pairing request
+{
+  name: "telegram_pair",
+  description: "Approve or deny a Telegram pairing request",
+  inputSchema: {
+    type: "object",
+    properties: {
+      userId: { type: "number", required: true },
+      approve: { type: "boolean", required: true }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      success: { type: "boolean" },
+      pairedUsers: { type: "number" }
+    }
+  }
+}
+
+// telegram_status - Get bot status
+{
+  name: "telegram_status",
+  description: "Get Telegram bot status and statistics",
+  inputSchema: { type: "object", properties: {} },
+  outputSchema: {
+    type: "object",
+    properties: {
+      online: { type: "boolean" },
+      uptime: { type: "number" },
+      pairedUsers: { type: "number" },
+      pendingMessages: { type: "number" },
+      pendingPairings: { type: "number" }
+    }
+  }
+}
+```
+
+### Memory Tools
+
+```typescript
+// memory_search - Search memories with hybrid search
+{
+  name: "memory_search",
+  description: "Search memories using hybrid vector + keyword search",
+  inputSchema: {
+    type: "object",
+    properties: {
+      query: { type: "string", required: true },
+      mode: { type: "string", enum: ["hybrid", "vector", "keyword"], default: "hybrid" },
+      limit: { type: "number", default: 10 },
+      entryTypes: {
+        type: "array",
+        items: { type: "string", enum: ["fact", "preference", "event", "insight", "task", "relationship"] }
+      },
+      minImportance: { type: "number", minimum: 1, maximum: 10 },
+      minConfidence: { type: "number", minimum: 0, maximum: 1 },
+      tags: { type: "array", items: { type: "string" } }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      results: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "number" },
+            content: { type: "string" },
+            entryType: { type: "string" },
+            score: { type: "number" },
+            confidence: { type: "number" },
+            importance: { type: "number" },
+            source: { type: "string" },
+            tags: { type: "array", items: { type: "string" } },
+            createdAt: { type: "number" }
+          }
+        }
+      },
+      totalMatches: { type: "number" }
+    }
+  }
+}
+
+// memory_add - Add a new memory
+{
+  name: "memory_add",
+  description: "Add a new memory entry",
+  inputSchema: {
+    type: "object",
+    properties: {
+      content: { type: "string", required: true },
+      entryType: {
+        type: "string",
+        enum: ["fact", "preference", "event", "insight", "task", "relationship"],
+        default: "fact"
+      },
+      source: { type: "string", default: "manual" },
+      context: { type: "string" },
+      confidence: { type: "number", default: 1.0, minimum: 0, maximum: 1 },
+      importance: { type: "number", default: 5, minimum: 1, maximum: 10 },
+      tags: { type: "array", items: { type: "string" } },
+      expiresAt: { type: "number" }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      success: { type: "boolean" },
+      id: { type: "number" },
+      duplicate: { type: "boolean" },
+      existingId: { type: "number" }
+    }
+  }
+}
+
+// memory_get - Get a specific memory by ID
+{
+  name: "memory_get",
+  description: "Retrieve a specific memory entry by ID",
+  inputSchema: {
+    type: "object",
+    properties: {
+      id: { type: "number", required: true }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      entry: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+          content: { type: "string" },
+          entryType: { type: "string" },
+          source: { type: "string" },
+          context: { type: "string" },
+          confidence: { type: "number" },
+          importance: { type: "number" },
+          tags: { type: "array" },
+          createdAt: { type: "number" },
+          updatedAt: { type: "number" },
+          expiresAt: { type: "number" },
+          accessCount: { type: "number" }
+        }
+      }
+    }
+  }
+}
+
+// memory_stats - Get memory statistics
+{
+  name: "memory_stats",
+  description: "Get statistics about the memory database",
+  inputSchema: { type: "object", properties: {} },
+  outputSchema: {
+    type: "object",
+    properties: {
+      totalEntries: { type: "number" },
+      byType: { type: "object" },
+      avgImportance: { type: "number" },
+      avgConfidence: { type: "number" },
+      oldestEntry: { type: "number" },
+      newestEntry: { type: "number" },
+      totalAccesses: { type: "number" }
+    }
+  }
+}
+```
+
+### Soul Tools
+
+```typescript
+// soul_read - Read soul/identity files
+{
+  name: "soul_read",
+  description: "Read soul, identity, or agents file",
+  inputSchema: {
+    type: "object",
+    properties: {
+      file: {
+        type: "string",
+        enum: ["soul", "identity", "agents", "user"],
+        required: true
+      }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      content: { type: "string" },
+      lastModified: { type: "number" }
+    }
+  }
+}
+
+// soul_propose_update - Propose a soul update (requires approval)
+{
+  name: "soul_propose_update",
+  description: "Propose an update to SOUL.md (requires user approval)",
+  inputSchema: {
+    type: "object",
+    properties: {
+      file: { type: "string", enum: ["soul", "agents"], required: true },
+      newContent: { type: "string", required: true },
+      reason: { type: "string", required: true }
+    }
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      proposalId: { type: "string" },
+      diff: { type: "string" },
+      status: { type: "string", enum: ["pending", "approved", "denied"] }
+    }
+  }
+}
+```
+
+### Heartbeat Tools
+
+```typescript
+// heartbeat_status - Get heartbeat status
+{
+  name: "heartbeat_status",
+  description: "Get current heartbeat/autonomy status",
+  inputSchema: { type: "object", properties: {} },
+  outputSchema: {
+    type: "object",
+    properties: {
+      enabled: { type: "boolean" },
+      paused: { type: "boolean" },
+      interval: { type: "number" },
+      lastRun: { type: "number" },
+      nextRun: { type: "number" },
+      pendingTasks: { type: "number" },
+      inActiveHours: { type: "boolean" }
+    }
+  }
+}
+
+// heartbeat_pause - Pause heartbeat
+{
+  name: "heartbeat_pause",
+  description: "Pause autonomous heartbeat execution",
+  inputSchema: { type: "object", properties: {} },
+  outputSchema: {
+    type: "object",
+    properties: {
+      success: { type: "boolean" },
+      wasPaused: { type: "boolean" }
+    }
+  }
+}
+
+// heartbeat_resume - Resume heartbeat
+{
+  name: "heartbeat_resume",
+  description: "Resume autonomous heartbeat execution",
+  inputSchema: { type: "object", properties: {} },
+  outputSchema: {
+    type: "object",
+    properties: {
+      success: { type: "boolean" },
+      nextRun: { type: "number" }
+    }
+  }
+}
+```
+
+---
+
+## Database Schema
+
 ```sql
-CREATE TABLE memories (
-  id INTEGER PRIMARY KEY,
+-- Memory entries with typed data and metadata
+CREATE TABLE memory_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   content TEXT NOT NULL,
-  source TEXT,              -- file path or session ID
-  timestamp INTEGER,
-  embedding BLOB,           -- vector embedding
-  metadata JSON
+  content_hash TEXT UNIQUE NOT NULL,        -- SHA-256 for deduplication
+  entry_type TEXT NOT NULL DEFAULT 'fact',  -- fact|preference|event|insight|task|relationship
+  source TEXT DEFAULT 'manual',
+  context TEXT,
+  confidence REAL DEFAULT 1.0 CHECK(confidence >= 0 AND confidence <= 1),
+  importance INTEGER DEFAULT 5 CHECK(importance >= 1 AND importance <= 10),
+  tags TEXT,                                 -- JSON array
+  embedding BLOB,                            -- Vector embedding
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  expires_at INTEGER,
+  access_count INTEGER DEFAULT 0,
+  last_accessed_at INTEGER,
+  metadata TEXT                              -- JSON for extensibility
 );
 
-CREATE VIRTUAL TABLE memories_fts USING fts5(
+-- Full-text search
+CREATE VIRTUAL TABLE memory_fts USING fts5(
   content,
-  source,
-  content='memories'
+  context,
+  tags,
+  content='memory_entries',
+  content_rowid='id'
 );
+
+-- Access logging for analytics
+CREATE TABLE memory_access_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  memory_id INTEGER NOT NULL,
+  accessed_at INTEGER NOT NULL,
+  access_type TEXT NOT NULL,                 -- search|direct|context
+  relevance_score REAL,
+  query_text TEXT,
+  FOREIGN KEY (memory_id) REFERENCES memory_entries(id) ON DELETE CASCADE
+);
+
+-- Daily summaries
+CREATE TABLE daily_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT UNIQUE NOT NULL,                 -- YYYY-MM-DD
+  summary TEXT,
+  key_events TEXT,                           -- JSON array
+  created_at INTEGER NOT NULL
+);
+
+-- Telegram pairing
+CREATE TABLE telegram_users (
+  id INTEGER PRIMARY KEY,                    -- Telegram user ID
+  username TEXT,
+  paired_at INTEGER NOT NULL,
+  last_message_at INTEGER,
+  message_count INTEGER DEFAULT 0
+);
+
+-- Pending approvals
+CREATE TABLE pending_approvals (
+  id TEXT PRIMARY KEY,                       -- UUID
+  type TEXT NOT NULL,                        -- soul_update|pairing|action
+  payload TEXT NOT NULL,                     -- JSON
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER,
+  status TEXT DEFAULT 'pending'              -- pending|approved|denied|expired
+);
+
+-- Indexes
+CREATE INDEX idx_memory_type ON memory_entries(entry_type);
+CREATE INDEX idx_memory_importance ON memory_entries(importance DESC);
+CREATE INDEX idx_memory_hash ON memory_entries(content_hash);
+CREATE INDEX idx_memory_expires ON memory_entries(expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX idx_access_memory ON memory_access_log(memory_id);
+CREATE INDEX idx_access_time ON memory_access_log(accessed_at DESC);
+CREATE INDEX idx_approvals_status ON pending_approvals(status) WHERE status = 'pending';
 ```
 
-**Search API:**
-```typescript
-interface MemorySearchOptions {
-  query: string;
-  mode: 'hybrid' | 'vector' | 'keyword';
-  limit?: number;
-  threshold?: number;
-}
+---
 
-interface MemoryResult {
-  content: string;
-  source: string;
-  score: number;
-  timestamp: number;
-}
-
-async function searchMemory(options: MemorySearchOptions): Promise<MemoryResult[]>
-```
-
-### 2. Soul & Identity System
-
-**Objective:** Implement persistent, evolving agent personality through file-based configuration.
-
-#### Requirements
-
-**Functional:**
-- FR2.1: Bootstrap files define agent personality and behavior
-- FR2.2: `SOUL.md` contains core personality traits (agent can modify)
-- FR2.3: `IDENTITY.md` contains concrete identifiers (name, type, avatar)
-- FR2.4: `AGENTS.md` contains operating instructions and safety rules
-- FR2.5: `USER.md` contains user profile information
-- FR2.6: `BOOTSTRAP.md` for first-run initialization (auto-deleted)
-- FR2.7: Files injected into Claude Code context at session start
-- FR2.8: Agent can propose changes to SOUL.md, AGENTS.md (requires approval)
-- FR2.9: Changes tracked with git-style diffs before approval
-
-**Non-Functional:**
-- NFR2.1: Bootstrap files loaded in <100ms
-- NFR2.2: File changes reflected in next session automatically
-- NFR2.3: Manual file edits supported and respected
-
-#### File Templates
-
-**SOUL.md Structure:**
-```markdown
-# Soul
-
-## Core Essence
-[Who you are at the deepest level]
-
-## Communication Style
-[How you express yourself]
-
-## Boundaries
-[What you will and won't do]
-
-## Evolution
-[How you've changed over time]
-```
-
-**IDENTITY.md Structure:**
-```markdown
-# Identity
-
-- **Name**: [Agent name]
-- **Type**: [AI assistant, companion, etc.]
-- **Vibe**: [Core feeling/aesthetic]
-- **Emoji**: [Signature emoji]
-- **Avatar**: [Description or path]
-```
-
-**AGENTS.md Structure:**
-```markdown
-# Operating Instructions
-
-## Memory Protocol
-[How to use memory system]
-
-## Safety Rules
-[Security boundaries]
-
-## Autonomous Behavior
-[Guidelines for self-initiated actions]
-
-## External vs Internal Actions
-[When to interact with outside systems]
-```
-
-### 3. Basic Autonomy (Heartbeat)
-
-**Objective:** Enable periodic self-initiated agent activity with security controls.
-
-#### Requirements
-
-**Functional:**
-- FR3.1: Configurable heartbeat interval (default: 30 minutes)
-- FR3.2: `HEARTBEAT.md` file contains task checklist
-- FR3.3: Agent reads HEARTBEAT.md and executes pending tasks
-- FR3.4: Support for `HEARTBEAT_OK` token to suppress empty responses
-- FR3.5: Active hours configuration (timezone-aware)
-- FR3.6: Pause/resume heartbeat via CLI command
-- FR3.7: All heartbeat actions logged to audit trail
-- FR3.8: Approval requirement for high-risk heartbeat actions
-- FR3.9: Heartbeat only runs when main session idle
-
-**Non-Functional:**
-- NFR3.1: Heartbeat trigger accurate within ±1 minute
-- NFR3.2: Failed heartbeat doesn't crash system
-- NFR3.3: Configurable retry logic with exponential backoff
-
-#### Configuration
+## Configuration
 
 ```typescript
-interface HeartbeatConfig {
-  enabled: boolean;
-  interval: number;              // milliseconds
-  activeHours?: {
-    start: string;               // "09:00"
-    end: string;                 // "23:00"
-    timezone: string;            // "America/Los_Angeles"
+interface MudpuppyConfig {
+  version: string;
+
+  telegram: {
+    enabled: boolean;
+    botToken?: string;          // Or via TELEGRAM_BOT_TOKEN env
+    allowGroups: boolean;
   };
-  requireApproval: boolean;      // approval-first mode
-  maxActionsPerBeat: number;     // safety limit
+
+  memory: {
+    embeddingProvider: 'openai' | 'local' | 'none';
+    embeddingModel?: string;
+    hybridWeights: {
+      vector: number;           // default: 0.7
+      keyword: number;          // default: 0.3
+    };
+    autoIndex: boolean;
+    indexInterval: number;      // milliseconds
+  };
+
+  heartbeat: {
+    enabled: boolean;
+    interval: number;           // milliseconds, default: 1800000 (30 min)
+    activeHours?: {
+      start: string;            // "09:00"
+      end: string;              // "23:00"
+      timezone: string;         // "America/Los_Angeles"
+    };
+    maxActionsPerBeat: number;  // safety limit
+    requireApproval: boolean;
+  };
+
+  security: {
+    approvalRequired: string[]; // tool names requiring approval
+    auditLog: boolean;
+    maxMessageLength: number;
+  };
 }
 ```
 
-**HEARTBEAT.md Format:**
-```markdown
-# Heartbeat Tasks
-
-## Recurring
-- [ ] Check for important notifications
-- [ ] Update daily memory log if significant events
-
-## One-time
-- [ ] Research topic X (added 2026-02-02)
-- [x] Completed task (done 2026-02-01)
+**Default config.json:**
+```json
+{
+  "version": "2.0.0",
+  "telegram": {
+    "enabled": false,
+    "allowGroups": false
+  },
+  "memory": {
+    "embeddingProvider": "local",
+    "embeddingModel": "all-MiniLM-L6-v2",
+    "hybridWeights": { "vector": 0.7, "keyword": 0.3 },
+    "autoIndex": true,
+    "indexInterval": 5000
+  },
+  "heartbeat": {
+    "enabled": false,
+    "interval": 1800000,
+    "maxActionsPerBeat": 5,
+    "requireApproval": true
+  },
+  "security": {
+    "approvalRequired": ["soul_propose_update"],
+    "auditLog": true,
+    "maxMessageLength": 4096
+  }
+}
+```
 
 ---
-HEARTBEAT_OK
-```
 
-### 4. Telegram Integration
+## Development Phases
 
-**Objective:** Enable **bidirectional** remote interaction and control via Telegram - both sending messages to Claude AND receiving responses/notifications.
+### Phase 0: Foundation (MCP Server Skeleton)
 
-**Key Feature:** Telegram becomes a remote interface to your Claude Code session, allowing full control while away from your computer.
-
-#### Requirements
-
-**Functional:**
-- FR4.1: Telegram bot based on grammY library
-- FR4.2: DM pairing system (user must initiate with `/start`)
-- FR4.3: **Bidirectional messaging:** Telegram ↔ Claude Code ↔ Telegram
-- FR4.4: Route incoming Telegram messages to Claude Code session
-- FR4.5: Route Claude Code responses back to Telegram user
-- FR4.6: **Remote approvals:** Approval requests sent to Telegram, can approve remotely
-- FR4.7: **Remote commands:** `/status`, `/pause`, `/resume` work from Telegram
-- FR4.8: HTML formatting for rich message display
-- FR4.9: Draft streaming support (real-time response updates)
-- FR4.10: Heartbeat notifications sent to Telegram
-- FR4.11: Configuration via environment variables (bot token)
-- FR4.12: **Context awareness:** Claude knows when messages are from Telegram vs CLI
-
-**Non-Functional:**
-- NFR4.1: Message delivery within 2 seconds
-- NFR4.2: Support long-polling (webhook optional)
-- NFR4.3: Handle Telegram API rate limits gracefully
-- NFR4.4: Secure token storage (not in git)
-
-#### Security Requirements
-
-**SR4.1:** Bot token stored in `~/.mudpuppy/secrets.env` (gitignored)
-**SR4.2:** Only paired users can interact with bot
-**SR4.3:** Pairing requires approval on local machine
-**SR4.4:** All Telegram commands logged to audit trail
-**SR4.5:** No sensitive information sent over Telegram without user approval
-
-#### Bidirectional Flow Examples
-
-**Scenario 1: Remote Chat**
-```
-[You on Telegram]: "What's on my calendar today?"
-  ↓
-[Routes to Claude Code session]
-  ↓
-[Claude processes using your subscription]
-  ↓
-[You on Telegram receive]: "You have 3 meetings: ..."
-```
-
-**Scenario 2: Remote Approval**
-```
-[Heartbeat triggers on your computer]
-  ↓
-[Needs approval to update memory]
-  ↓
-[You on Telegram receive]: "⚠️ APPROVAL: Update MEMORY.md? [APPROVE/DENY]"
-  ↓
-[You on Telegram]: "APPROVE"
-  ↓
-[Approval routes to Claude Code]
-  ↓
-[Action executes]
-  ↓
-[You on Telegram receive]: "✅ Memory updated"
-```
-
-**Scenario 3: Remote Command**
-```
-[You on Telegram]: "/status"
-  ↓
-[Routes to Mudpuppy skill]
-  ↓
-[Skill queries system status]
-  ↓
-[You on Telegram receive]: "📊 Status: Online, 3 tasks pending, uptime 4h"
-```
-
-#### API Design
-
-```typescript
-interface TelegramConfig {
-  botToken: string;
-  pairedUsers: number[];         // Telegram user IDs
-  enableGroups: boolean;
-  notifyHeartbeat: boolean;
-}
-
-class TelegramBridge {
-  // Outgoing (to Telegram)
-  async sendMessage(userId: number, text: string, options?: MessageOptions): Promise<void>
-  async sendNotification(text: string): Promise<void>
-  async requestApproval(userId: number, request: ApprovalRequest): Promise<boolean>
-
-  // Incoming (from Telegram)
-  async routeToClaudeCode(userId: number, message: string): Promise<void>
-  async handleCommand(userId: number, command: string): Promise<void>
-
-  // Pairing
-  async pairUser(userId: number): Promise<boolean>  // requires local approval
-  async unpairUser(userId: number): Promise<void>
-}
-
-// Integration with Claude Code
-interface ClaudeCodeIntegration {
-  async sendMessage(text: string, context: MessageContext): Promise<string>
-  async onResponse(callback: (response: string, destination: string) => void): void
-  async requestApproval(request: ApprovalRequest): Promise<boolean>
-}
-```
-
-## Cross-Cutting Requirements
-
-### Security & Privacy
-
-**Approval System:**
-- All file writes require approval (except memory logs)
-- All external network requests require approval
-- All command executions require approval
-- Approval UI shows exact action with preview
-- Approval decisions cached per session (optional)
-
-**Audit Logging:**
-- All tool executions logged with timestamp
-- All file changes logged with diffs
-- All autonomous actions logged with trigger
-- Logs stored at `~/.mudpuppy/audit.log`
-- Log rotation after 10MB or 30 days
-
-**Sandboxing:**
-- Memory database isolated from main filesystem
-- Telegram bot runs in separate process
-- File access restricted to `~/.mudpuppy/` by default
-- Environment variables for secrets (never in code)
-
-### Performance
-
-- Memory search: <500ms p95
-- Bootstrap file loading: <100ms
-- Heartbeat trigger accuracy: ±1 minute
-- Telegram message delivery: <2 seconds
-
-### Reliability
-
-- Graceful degradation if components fail
-- Retry logic with exponential backoff
-- State recovery after crash
-- Health check endpoint
-- Process monitoring
-
-### Observability
-
-- Structured logging (JSON format)
-- Log levels: debug, info, warn, error
-- Metrics collection (optional, local only)
-- Status dashboard (CLI command: `openclaw status`)
-
-## User Interface
-
-### CLI Commands
-
-```bash
-# Initialize new agent
-openclaw init
-
-# Start the agent (with heartbeat)
-openclaw start
-
-# Stop the agent
-openclaw stop
-
-# Status check
-openclaw status
-
-# Memory search
-openclaw memory search "query"
-
-# Memory add
-openclaw memory add "content" [--source=file]
-
-# Telegram pairing
-openclaw telegram pair
-
-# Configuration
-openclaw config set heartbeat.interval 1800000
-openclaw config get
-
-# Audit log
-openclaw audit [--tail] [--filter=tool:exec]
-```
-
-### Approval UI
-
-Text-based approval prompts in terminal:
-
-```
-┌──────────────────────────────────────────────────┐
-│ APPROVAL REQUIRED                                │
-├──────────────────────────────────────────────────┤
-│ Tool: file_write                                 │
-│ File: ~/.mudpuppy/SOUL.md                 │
-│                                                  │
-│ Diff:                                            │
-│ - ## Boundaries                                  │
-│ + ## Boundaries & Values                         │
-│                                                  │
-│ Reason: Updating soul to reflect new learning    │
-│                                                  │
-│ [A]pprove  [D]eny  [V]iew full  [R]emember      │
-└──────────────────────────────────────────────────┘
-```
-
-## Technical Architecture
-
-### Plugin Structure
-
-```
-mudpuppy/
-├── src/
-│   ├── plugin.ts              # Main plugin entry point
-│   ├── memory/
-│   │   ├── index.ts           # Memory system
-│   │   ├── search.ts          # Hybrid search
-│   │   ├── embeddings.ts      # Vector embeddings
-│   │   └── storage.ts         # SQLite + FTS
-│   ├── soul/
-│   │   ├── index.ts           # Soul/Identity system
-│   │   ├── bootstrap.ts       # File loader
-│   │   └── templates.ts       # Default templates
-│   ├── autonomy/
-│   │   ├── heartbeat.ts       # Heartbeat engine
-│   │   ├── scheduler.ts       # Future: cron
-│   │   └── executor.ts        # Action execution
-│   ├── telegram/
-│   │   ├── bot.ts             # Telegram bot
-│   │   ├── pairing.ts         # User pairing
-│   │   └── formatter.ts       # Message formatting
-│   ├── tools/
-│   │   ├── memory.ts          # Memory tools
-│   │   ├── soul.ts            # Soul update tools
-│   │   └── telegram.ts        # Telegram tools
-│   ├── security/
-│   │   ├── approval.ts        # Approval manager
-│   │   ├── audit.ts           # Audit logging
-│   │   └── sandbox.ts         # Future: sandboxing
-│   └── cli/
-│       └── index.ts           # CLI commands
-├── templates/                 # Bootstrap file templates
-├── tests/
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
-### Plugin Integration with Claude Code
-
-The plugin hooks into Claude Code at these extension points:
-
-1. **Context Injection**: Bootstrap files loaded at session start
-2. **Tool Registration**: Memory, soul, telegram tools added to tool registry
-3. **Background Tasks**: Heartbeat scheduled via Claude Code task system
-4. **Event Hooks**: File watch, session start/end, message received
-
-### Data Flow: Memory Search
-
-```
-User Query
-    ↓
-Claude Code receives message
-    ↓
-Plugin injects memory search tool
-    ↓
-Agent decides to search memory
-    ↓
-memory_search(query: "previous discussion about X")
-    ↓
-┌─────────────────────────────┐
-│ Hybrid Search Engine        │
-│ ┌─────────┐   ┌──────────┐ │
-│ │ Vector  │   │ Keyword  │ │
-│ │ Search  │   │ Search   │ │
-│ │ (HNSW)  │   │ (FTS5)   │ │
-│ └────┬────┘   └────┬─────┘ │
-│      │             │        │
-│      └──────┬──────┘        │
-│           ┌─▼─┐             │
-│           │ ⊕ │ Combine     │
-│           └─┬─┘             │
-└─────────────┼───────────────┘
-              ↓
-    Results ranked by relevance
-              ↓
-    Injected into context
-              ↓
-    Agent uses results to answer
-```
-
-### Data Flow: Autonomous Heartbeat
-
-```
-Timer triggers (every 30 min)
-    ↓
-Check active hours (if configured)
-    ↓
-Check if main session idle
-    ↓
-Load HEARTBEAT.md
-    ↓
-Parse uncompleted tasks
-    ↓
-Create agent turn in main session
-    ↓
-Agent processes tasks
-    ↓
-┌─────────────────────────────┐
-│ For each action:            │
-│   ┌──────────────────┐      │
-│   │ Requires         │      │
-│   │ approval?        │      │
-│   └────┬─────────────┘      │
-│   Yes  │  No                │
-│   ┌────▼────┐  ┌─────────┐ │
-│   │ Show    │  │ Execute │ │
-│   │ prompt  │  │ directly│ │
-│   └────┬────┘  └────┬────┘ │
-│        │            │       │
-│  ┌─────▼────────────▼────┐ │
-│  │ Log to audit trail     │ │
-│  └────────────────────────┘ │
-└─────────────────────────────┘
-    ↓
-Update HEARTBEAT.md (mark completed)
-    ↓
-Send notification to Telegram (if configured)
-```
-
-## Development Plan
-
-**IMPORTANT EXECUTION NOTES:**
-1. **Test-driven development**: Each phase must be fully tested with human-in-the-loop validation before moving to next phase
-2. **Progress tracking**: Maintain PROGRESS.md file across all sessions to track completion status
-3. **Iterative refinement**: Expect loose requirements to be refined during implementation
-4. **No feature creep**: Do not proceed to next phase until current phase is proven working
-
-### Phase 0: Project Setup & Foundation
-
-**Objective:** Bootstrap TypeScript project with basic tooling and structure.
+**Objective:** Create MCP server infrastructure and basic tooling.
 
 **Tasks:**
-- Initialize TypeScript project with proper tsconfig
-- Set up build tooling (esbuild or tsc)
-- Configure testing framework (vitest)
-- Create basic project structure (src/, tests/, templates/)
-- Implement configuration system (JSON-based)
-- Set up git repository with proper .gitignore
+- Initialize TypeScript project with MCP SDK
+- Create MCP server skeleton with tool registration
+- Implement config system (JSON-based, environment-aware)
+- Create CLI for setup and management
+- Set up workspace directory structure
+- Implement logging and error handling
+
+**Deliverables:**
+- `src/mcp-server.ts` - MCP server entry point
+- `src/config.ts` - Configuration manager
+- `src/cli/index.ts` - CLI commands
+- `src/tools/index.ts` - Tool registry
 
 **Acceptance Criteria:**
-- [ ] `npm run build` compiles TypeScript without errors
-- [ ] `npm run test` runs test suite successfully
-- [ ] Basic CLI entry point exists and runs (`openclaw --version`)
-- [ ] Configuration can be loaded from `~/.mudpuppy/config.json`
-- [ ] All secrets/tokens properly gitignored
+- [ ] MCP server starts and registers with Claude Code
+- [ ] `mudpuppy init` creates workspace structure
+- [ ] `mudpuppy config get/set` works
+- [ ] Config loads from `~/.mudpuppy/config.json`
+- [ ] All paths use `$MUDPUPPY_HOME` or `~`
+- [ ] `npm run build` succeeds
+- [ ] Basic tests pass
 
 **Testing:**
-- Manual: Run build, run tests, execute CLI
-- Unit tests: Configuration loading
-- Human validation: Review project structure
-
-**Estimated Time:** 1-2 sessions
-**Blocker for:** All other phases
+- Unit: Config loading, path resolution
+- Integration: MCP server registration
+- Manual: CLI commands work
 
 ---
 
-### Phase 1: Telegram Integration (PRIORITY)
+### Phase 1: Telegram Tools
 
-**Objective:** Get basic Telegram bot working for remote testing and interaction.
-
-**Rationale:** Enables remote testing while away from house, unlocks async development workflow.
+**Objective:** Implement Telegram integration as MCP tools.
 
 **Tasks:**
-- Install and configure grammY library
-- Create basic bot that responds to messages
-- Implement `/start` command for pairing
-- Store bot token in `~/.mudpuppy/secrets.env`
-- Local approval UI for pairing requests
-- Message routing: Telegram → local agent context
-- Response routing: agent output → Telegram
-- Basic HTML formatting for messages
-- `/status` command to check bot health
+- Create Telegram bot daemon (grammY)
+- Implement IPC between MCP server and bot (Unix socket or HTTP)
+- Implement `telegram_poll` tool
+- Implement `telegram_send` tool
+- Implement `telegram_pair` tool (with approval flow)
+- Implement `telegram_status` tool
+- Store paired users in SQLite
+- Create bot management CLI commands
+
+**Deliverables:**
+- `src/telegram/bot.ts` - Bot daemon
+- `src/telegram/ipc.ts` - IPC client for MCP server
+- `src/tools/telegram.ts` - Telegram MCP tools
+- Bot start/stop scripts
 
 **Acceptance Criteria:**
-- [ ] Bot comes online when `openclaw start` runs
-- [ ] User can send `/start` to bot
-- [ ] Pairing request appears in local terminal
-- [ ] After approval, user is paired
-- [ ] Messages sent to bot appear in local agent context
-- [ ] Agent responses sent back to Telegram
-- [ ] `/status` command returns bot uptime and paired users
-- [ ] Bot gracefully handles rate limits
-- [ ] Bot token is NOT in git repository
+- [ ] Bot starts as daemon via `mudpuppy telegram start`
+- [ ] `telegram_poll` returns pending messages
+- [ ] `telegram_send` delivers messages successfully
+- [ ] `telegram_pair` triggers approval flow
+- [ ] `telegram_status` returns accurate stats
+- [ ] Messages from unpaired users are rejected
+- [ ] Bot token stored securely (not in git)
+- [ ] Bot survives restarts
 
 **Testing:**
-- Manual: Send messages via Telegram, verify responses
-- Integration: Full pairing flow from Telegram to local approval
-- Edge cases: Invalid commands, rate limiting, bot restart
-- Human validation: Use bot for 24 hours, verify stability
-
-**Estimated Time:** 2-3 sessions
-**Blocker for:** Heartbeat notifications, remote testing
+- Unit: Each tool in isolation (mocked bot)
+- Integration: Tool → Bot → Telegram roundtrip
+- Manual: Send messages from phone, verify delivery
 
 ---
 
-### Phase 2: Soul & Identity System
+### Phase 2: Memory Tools
 
-**Objective:** Implement persistent agent personality through bootstrap files.
-
-**Tasks:**
-- Create bootstrap file templates (SOUL.md, IDENTITY.md, AGENTS.md, USER.md)
-- Implement first-run initialization flow (BOOTSTRAP.md)
-- File loader that reads bootstrap files
-- Context injection mechanism for Claude Code
-- Soul update tool (agent can propose changes)
-- Approval flow for soul/agents modifications
-- Git-style diff display before approval
-- Automatic reload on file changes
-
-**Acceptance Criteria:**
-- [ ] On first run, BOOTSTRAP.md guides user through setup
-- [ ] All bootstrap files created in `~/.mudpuppy/`
-- [ ] Files injected into agent context at session start
-- [ ] Agent maintains consistent personality across sessions
-- [ ] Agent can propose changes to SOUL.md (with approval)
-- [ ] Manual file edits reflected in next session
-- [ ] Diff shown before approving soul updates
-
-**Testing:**
-- Manual: First-run experience, personality consistency
-- Unit tests: File loading, template rendering
-- Integration: Edit SOUL.md manually, verify reload
-- Human validation: Chat with agent over 3+ sessions, verify personality persists
-
-**Estimated Time:** 2-3 sessions
-**Blocker for:** Personality evolution, user profiling
-
----
-
-### Phase 3: Memory Persistence System
-
-**Objective:** Enable agent to accumulate and search knowledge across sessions.
+**Objective:** Implement memory persistence with hybrid search.
 
 **Tasks:**
 - Set up SQLite database with schema
-- Install and configure sqlite-vec extension
-- Implement FTS5 virtual table for keyword search
-- Embedding generation (choose provider: OpenAI or local)
-- Hybrid search combining vector + keyword
-- Memory indexing on startup
-- File watcher for auto-indexing new memory files
-- Daily memory log creation (`memory/YYYY-MM-DD.md`)
-- Session transcript logging (JSONL format)
-- `memory_search` tool for agent
-- CLI: `openclaw memory search "query"`
-- CLI: `openclaw memory add "content"`
+- Implement content hash deduplication
+- Implement `memory_add` tool
+- Implement `memory_search` tool with hybrid search
+- Implement `memory_get` tool
+- Implement `memory_stats` tool
+- Implement access logging
+- Add embedding support (OpenAI or local)
+- File watcher for markdown files
+- Daily log auto-creation
+
+**Deliverables:**
+- `src/memory/db.ts` - Database operations
+- `src/memory/search.ts` - Hybrid search engine
+- `src/memory/embeddings.ts` - Embedding generation
+- `src/tools/memory.ts` - Memory MCP tools
+- Database migration scripts
 
 **Acceptance Criteria:**
-- [ ] Memory database created at `~/.mudpuppy/agents/default/memory.db`
-- [ ] Daily log auto-created when agent runs
-- [ ] Session transcripts saved to JSONL
-- [ ] `memory_search` tool returns relevant results
-- [ ] Hybrid search works (both vector and keyword)
-- [ ] Search results in <500ms for 1000+ entries
-- [ ] File changes auto-indexed within 5 seconds
-- [ ] Manual memory edits searchable immediately
+- [ ] `memory_add` creates entries with all metadata
+- [ ] Duplicate content returns existing entry (deduplication works)
+- [ ] `memory_search` returns relevant results in <500ms
+- [ ] Hybrid search combines vector + keyword scores
+- [ ] Access logging records every retrieval
+- [ ] `memory_stats` returns accurate statistics
+- [ ] File changes auto-indexed
+- [ ] Daily log created on first activity each day
 
 **Testing:**
-- Unit tests: Search algorithm, embedding generation, database queries
-- Integration: Add memories, search, verify results
-- Performance: Load 10,000 entries, verify search speed
-- Human validation: Use agent for 1 week, verify memory recall accuracy
-
-**Estimated Time:** 3-4 sessions
-**Blocker for:** Learning capabilities, knowledge accumulation
+- Unit: Search algorithm, deduplication, scoring
+- Integration: Add → Search → Verify
+- Performance: 10,000 entries, verify speed
+- Deduplication: Add same content twice
 
 ---
 
-### Phase 4: Basic Autonomy (Heartbeat)
+### Phase 3: Soul/Identity Tools
 
-**Objective:** Enable periodic self-initiated agent activity with security controls.
+**Objective:** Implement personality persistence.
 
 **Tasks:**
-- Heartbeat scheduler with configurable interval
-- HEARTBEAT.md parser (checkbox format)
-- Task execution engine
-- Approval manager for high-risk actions
-- Audit logging system (`audit.log`)
-- Active hours configuration (timezone-aware)
-- CLI: `openclaw heartbeat pause/resume`
-- CLI: `openclaw audit --tail`
-- Telegram notification integration (from Phase 1)
-- `HEARTBEAT_OK` token support
+- Create default templates (SOUL.md, IDENTITY.md, AGENTS.md, USER.md)
+- Implement `soul_read` tool
+- Implement `soul_propose_update` tool with approval
+- Create first-run initialization flow
+- Implement file watching for manual edits
+- Create approval UI (terminal-based)
+
+**Deliverables:**
+- `src/soul/files.ts` - File operations
+- `src/soul/templates.ts` - Default templates
+- `src/tools/soul.ts` - Soul MCP tools
+- `src/approval/manager.ts` - Approval flow
+- Template files
 
 **Acceptance Criteria:**
-- [ ] Heartbeat triggers every N minutes (configurable)
-- [ ] Reads unchecked tasks from HEARTBEAT.md
-- [ ] Executes tasks with approval for risky actions
-- [ ] All actions logged to audit trail
+- [ ] First run creates all bootstrap files
+- [ ] `soul_read` returns file contents
+- [ ] `soul_propose_update` creates pending approval
+- [ ] Approval shows diff before accepting
+- [ ] Manual file edits detected and respected
+- [ ] Approval can be given via CLI
+
+**Testing:**
+- Unit: File loading, diff generation
+- Integration: Propose → Approve → Verify update
+- Manual: Edit SOUL.md manually, verify agent sees changes
+
+---
+
+### Phase 4: Autonomy (Heartbeat)
+
+**Objective:** Implement periodic self-initiated execution.
+
+**Tasks:**
+- Create heartbeat scheduler
+- Implement HEARTBEAT.md parser
+- Implement `heartbeat_status` tool
+- Implement `heartbeat_pause/resume` tools
+- Add active hours support
+- Integrate with approval system
+- Add Telegram notifications for heartbeat results
+- Implement audit logging
+
+**Deliverables:**
+- `src/autonomy/scheduler.ts` - Heartbeat scheduler
+- `src/autonomy/parser.ts` - HEARTBEAT.md parser
+- `src/tools/heartbeat.ts` - Heartbeat MCP tools
+- `src/audit/logger.ts` - Audit logging
+
+**Acceptance Criteria:**
+- [ ] Heartbeat triggers at configured interval
 - [ ] Respects active hours configuration
-- [ ] Sends notifications to Telegram on completion
-- [ ] Can pause/resume via CLI and Telegram
-- [ ] No heartbeat when main session active
+- [ ] Parses unchecked tasks from HEARTBEAT.md
+- [ ] Approval required for risky actions
+- [ ] All actions logged to audit trail
+- [ ] Pause/resume works via tools and CLI
+- [ ] Telegram notification on completion (if configured)
 - [ ] Failed heartbeat doesn't crash system
 
 **Testing:**
-- Unit tests: Parser, scheduler, task executor
-- Integration: Full heartbeat cycle with approvals
-- Edge cases: System restart, clock changes, concurrent sessions
-- Security: Verify all risky actions require approval
-- Human validation: Run for 48 hours, verify reliability
-
-**Estimated Time:** 3-4 sessions
-**Blocker for:** Full autonomy, cron scheduling
+- Unit: Parser, scheduler timing
+- Integration: Full heartbeat cycle
+- Edge cases: System restart, clock changes
+- Security: Verify approval requirements
 
 ---
 
-### Phase 5: Security Hardening & Polish
+### Phase 5: Skill Layer & Polish
 
-**Objective:** Finalize security features and prepare for daily use.
+**Objective:** Add persona layer and finalize for production use.
 
 **Tasks:**
-- Approval UI polish (better formatting, colors)
-- Secrets management audit (no tokens in git)
-- Audit log viewer with filtering
-- Security testing (penetration test)
-- Documentation (README, setup guide)
-- Error handling improvements
-- Graceful shutdown handling
-- Health check system
-- Backup/restore functionality
+- Create Claude Code skill that consumes MCP tools
+- Skill injects personality context
+- Skill defines common workflows
+- Polish approval UI
+- Complete documentation
+- Create setup script for new machines
+- Security audit
+- Performance optimization
+
+**Deliverables:**
+- `~/.claude/skills/mudpuppy/SKILL.md`
+- `setup.sh` - New machine setup script
+- `README.md` - Complete documentation
+- `docs/` - Module documentation
 
 **Acceptance Criteria:**
-- [ ] All secrets properly isolated
-- [ ] Approval UI is clear and user-friendly
-- [ ] Audit log complete and searchable
-- [ ] No security vulnerabilities in testing
+- [ ] Skill loads and works with MCP tools
+- [ ] Personality consistent across sessions
+- [ ] Setup script works on fresh machine
 - [ ] Documentation complete
-- [ ] Error messages helpful
-- [ ] System recovers from crashes
-- [ ] Backups created automatically
+- [ ] No hardcoded paths
+- [ ] Security audit passed
+- [ ] Performance targets met
 
 **Testing:**
-- Security audit: Review all approval points
-- Penetration test: Attempt to bypass approvals
-- Stress test: High message volume, rapid approvals
-- Human validation: Use as primary agent for 1 week
-
-**Estimated Time:** 2-3 sessions
-**Blocker for:** Production use
+- Manual: Full workflow testing
+- Portability: Test on fresh VM
+- Security: Penetration testing
+- Human validation: 1 week daily use
 
 ---
 
-### Future Phases (Post-MVP)
+## Portability Checklist
 
-**Not in current scope, but roadmap:**
-- Full cron scheduling (beyond heartbeat)
-- Sandbox isolation (Docker containers)
-- Tool orchestration layers
-- Subagent spawning
-- Web dashboard (optional UI)
-- Additional messaging platforms (WhatsApp, Signal, etc.)
-- Plugin SDK for community extensions
-- Multi-agent support (separate identities)
+For moving to a new VM:
+
+**Automated (via setup.sh):**
+- [ ] Create `~/.mudpuppy/` directory structure
+- [ ] Install Node.js dependencies
+- [ ] Build TypeScript
+- [ ] Register MCP server with Claude Code
+- [ ] Create skill symlink
+
+**Manual:**
+- [ ] Copy `~/.mudpuppy/workspace/` (soul files, memories)
+- [ ] Copy `~/.mudpuppy/data/memory.db` (or start fresh)
+- [ ] Create new Telegram bot token (or reuse)
+- [ ] Create `secrets.env` with tokens
+- [ ] Configure embedding API key (if using OpenAI)
+
+**Setup Script:**
+```bash
+#!/bin/bash
+# setup.sh - Initialize Mudpuppy on a new machine
+
+set -e
+
+MUDPUPPY_HOME="${MUDPUPPY_HOME:-$HOME/.mudpuppy}"
+
+echo "🐾 Setting up Mudpuppy..."
+
+# Check dependencies
+command -v node >/dev/null || { echo "❌ Node.js required"; exit 1; }
+command -v npm >/dev/null || { echo "❌ npm required"; exit 1; }
+
+# Create directory structure
+echo "📁 Creating workspace..."
+mkdir -p "$MUDPUPPY_HOME"/{workspace,data,bot,tools,memory}
+
+# Install dependencies
+echo "📦 Installing dependencies..."
+npm install
+
+# Build
+echo "🔨 Building..."
+npm run build
+
+# Initialize database
+echo "💾 Initializing database..."
+node dist/cli/index.js db:init
+
+# Create default config if not exists
+if [ ! -f "$MUDPUPPY_HOME/config.json" ]; then
+  echo "⚙️  Creating default config..."
+  node dist/cli/index.js init
+fi
+
+# Prompt for Telegram token
+echo ""
+echo "🤖 Telegram Setup (optional)"
+read -p "Enter Telegram bot token (or press Enter to skip): " TOKEN
+if [ -n "$TOKEN" ]; then
+  echo "TELEGRAM_BOT_TOKEN=$TOKEN" >> "$MUDPUPPY_HOME/secrets.env"
+  node dist/cli/index.js config set telegram.enabled true
+fi
+
+# Register MCP server
+echo "🔌 Registering MCP server with Claude Code..."
+# TODO: Add MCP registration command
+
+echo ""
+echo "✅ Setup complete!"
+echo ""
+echo "Next steps:"
+echo "  1. Run 'mudpuppy telegram start' to start the bot"
+echo "  2. Pair your Telegram account with /start"
+echo "  3. Configure heartbeat with 'mudpuppy config set heartbeat.enabled true'"
+echo ""
+```
+
+---
+
+## Security Model
+
+### Approval Requirements
+
+| Action | Requires Approval |
+|--------|-------------------|
+| `soul_propose_update` | Always |
+| `telegram_pair` | Always |
+| Heartbeat file writes | Configurable |
+| Heartbeat external commands | Always |
+| Memory deletion | Never (logged only) |
+
+### Audit Logging
+
+All tool invocations logged to `~/.mudpuppy/data/audit.log`:
+
+```json
+{
+  "timestamp": 1706889600000,
+  "tool": "memory_add",
+  "input": { "content": "...", "entryType": "fact" },
+  "output": { "success": true, "id": 42 },
+  "source": "telegram:123456",
+  "duration_ms": 45
+}
+```
+
+### Secret Management
+
+- **Never in git**: `secrets.env`, `*.db`, `audit.log`
+- **Environment variables**: `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`
+- **No hardcoded paths**: All paths relative to `$MUDPUPPY_HOME`
+
+---
 
 ## Success Metrics
 
-### MVP Success Criteria
-
-1. **Memory works**: Agent can recall information from previous sessions with >90% accuracy
+1. **Memory works**: Search returns relevant results >90% of the time
 2. **Identity persists**: Agent maintains consistent personality across sessions
-3. **Heartbeat reliable**: Executes scheduled tasks within ±1 minute, 99% uptime
-4. **Telegram functional**: Messages delivered within 2 seconds, pairing works flawlessly
-5. **Security effective**: Zero unapproved actions in testing, audit log complete
-6. **User satisfaction**: Primary user (you) uses it daily for 1+ week
+3. **Telegram reliable**: Messages delivered within 2 seconds, 99% uptime
+4. **Heartbeat accurate**: Executes within ±1 minute of scheduled time
+5. **Portable**: Fresh VM setup in <10 minutes
+6. **User satisfaction**: Daily use for 1+ week
 
-### Key Performance Indicators
+---
 
-- **Memory search latency**: <500ms p95
-- **Heartbeat accuracy**: ±1 minute
-- **Telegram delivery time**: <2 seconds
-- **Approval response time**: User decision within 30 seconds
-- **System uptime**: >99% when running
-- **Crash recovery**: Automatic restart within 1 minute
+## Migration from v1
 
-## Risk Assessment
+If you have existing v1 setup:
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|-----------|------------|
-| Memory search too slow | High | Medium | Optimize indexing, use incremental updates, cache frequently accessed |
-| Approval fatigue | High | High | Smart approval caching, risk-based auto-approval for low-risk actions |
-| Heartbeat runaway | Critical | Low | Max actions per beat, kill switch, active hours enforcement |
-| Telegram token leak | Critical | Medium | Secrets in gitignored file, env vars only, audit access |
-| Plugin conflicts with Claude Code updates | Medium | Medium | Minimal core modifications, version pinning, compatibility testing |
-| Memory corruption | High | Low | Database backups, WAL mode, fsync on write, integrity checks |
+1. **Keep workspace files**: `SOUL.md`, `IDENTITY.md`, etc. are compatible
+2. **Recreate config**: v2 config structure is different
+3. **No memory migration**: v2 uses different schema, start fresh or write migration script
+4. **Remove old skill**: Delete `~/.claude/skills/mudpuppy/` and reinstall
 
-## Open Questions
-
-1. **Embedding provider**: OpenAI, local model (sentence-transformers), or both?
-2. **Backup strategy**: Automatic backups of memory database and bootstrap files?
-3. **Multi-agent**: Support multiple agent identities in future phases?
-4. **Sharing**: Export/import memory snapshots between users?
-5. **Mobile**: iOS/Android app for Telegram alternative?
+---
 
 ## Appendix
 
-### Glossary
+### Tool Manifest Template
 
-- **Bootstrap files**: Configuration files that define agent personality and behavior
-- **Soul**: Core personality essence that evolves over time
-- **Identity**: Concrete metadata about the agent (name, avatar, etc.)
-- **Heartbeat**: Periodic autonomous check-in by the agent
-- **Memory**: Persistent knowledge storage with hybrid search
-- **Approval-first**: Security model requiring user approval for actions
-- **Hybrid search**: Combination of vector similarity and keyword matching
+`~/.mudpuppy/tools/manifest.md`:
 
-### References
+```markdown
+# Mudpuppy Tools
 
-- OpenClaw source code: `/home/localadmin/Desktop/workspace/openclaw`
-- OpenClaw workspace: `/home/localadmin/clawd`
-- Claude Code documentation: https://github.com/anthropics/claude-code
-- grammY documentation: https://grammy.dev/
-- sqlite-vec: https://github.com/asg017/sqlite-vec
+## Telegram
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| telegram_poll | Get pending messages | No |
+| telegram_send | Send message | No |
+| telegram_pair | Approve pairing | Yes |
+| telegram_status | Get bot status | No |
 
-### Version History
+## Memory
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| memory_search | Search memories | No |
+| memory_add | Add new memory | No |
+| memory_get | Get specific memory | No |
+| memory_stats | Get statistics | No |
 
-- **v1.0** (2026-02-02): Initial PRD based on user requirements
+## Soul
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| soul_read | Read soul/identity files | No |
+| soul_propose_update | Propose soul change | Yes |
+
+## Heartbeat
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| heartbeat_status | Get heartbeat status | No |
+| heartbeat_pause | Pause heartbeat | No |
+| heartbeat_resume | Resume heartbeat | No |
+```
+
+### Entry Types Reference
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `fact` | Objective information | "User's favorite color is blue" |
+| `preference` | User preferences | "Prefers concise responses" |
+| `event` | Something that happened | "Deployed v2.0 on 2026-02-01" |
+| `insight` | Learned patterns | "User tends to work late on Fridays" |
+| `task` | Things to remember | "Follow up on PR review" |
+| `relationship` | Entity connections | "Project X depends on Library Y" |
+
+---
+
+## Version History
+
+- **v2.0** (2026-02-02): Complete rewrite with MCP-first architecture
+- **v1.1** (2026-02-02): Added Phase 1.5 refactoring, atlas-agent patterns
+- **v1.0** (2026-02-02): Initial PRD (skill-first approach)

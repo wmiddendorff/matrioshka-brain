@@ -21,11 +21,28 @@ DEFAULT_CONFIG (fallback)
 Example:
 ```json
 {
-  "version": "0.1.0",
-  "workspace": "/home/user/.mudpuppy",
+  "version": "2.0.0",
+  "telegram": {
+    "enabled": false,
+    "allowGroups": false
+  },
+  "memory": {
+    "embeddingProvider": "local",
+    "embeddingModel": "Xenova/all-MiniLM-L6-v2",
+    "hybridWeights": { "vector": 0.7, "keyword": 0.3 },
+    "autoIndex": true,
+    "indexInterval": 5000
+  },
   "heartbeat": {
     "enabled": false,
-    "interval": 1800000
+    "interval": 1800000,
+    "maxActionsPerBeat": 5,
+    "requireApproval": true
+  },
+  "security": {
+    "approvalRequired": ["soul_propose_update", "telegram_pair"],
+    "auditLog": true,
+    "maxMessageLength": 4096
   }
 }
 ```
@@ -59,25 +76,42 @@ Example:
 
 ### Loading Sequence
 
-1. Check if `~/.mudpuppy/config.json` exists
+1. Check if config file exists at `$MUDPUPPY_HOME/config.json` or `~/.mudpuppy/config.json`
 2. If exists: Read and parse JSON
-3. Merge with `DEFAULT_CONFIG` (handles missing fields from old versions)
+3. Merge with `DEFAULT_CONFIG` using deep merge (handles missing fields from old versions)
 4. If doesn't exist or parse fails: Use `DEFAULT_CONFIG`
 
 ```typescript
-private load(): Config {
-  if (!existsSync(this.configPath)) {
-    return DEFAULT_CONFIG;
+private load(): MudpuppyConfig {
+  if (existsSync(this.configPath)) {
+    try {
+      const content = readFileSync(this.configPath, 'utf-8');
+      const loaded = JSON.parse(content);
+      return this.mergeWithDefaults(loaded);
+    } catch (error) {
+      console.error(`Error loading config: ${error}`);
+      return { ...DEFAULT_CONFIG };
+    }
   }
+  return { ...DEFAULT_CONFIG };
+}
 
-  try {
-    const data = readFileSync(this.configPath, 'utf-8');
-    const loaded = JSON.parse(data);
-    return { ...DEFAULT_CONFIG, ...loaded };  // Merge with defaults
-  } catch (error) {
-    console.warn(`Failed to load config, using defaults:`, error);
-    return DEFAULT_CONFIG;
-  }
+private mergeWithDefaults(loaded: Partial<MudpuppyConfig>): MudpuppyConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    ...loaded,
+    telegram: { ...DEFAULT_CONFIG.telegram, ...loaded.telegram },
+    memory: {
+      ...DEFAULT_CONFIG.memory,
+      ...loaded.memory,
+      hybridWeights: {
+        ...DEFAULT_CONFIG.memory.hybridWeights,
+        ...loaded.memory?.hybridWeights,
+      },
+    },
+    heartbeat: { ...DEFAULT_CONFIG.heartbeat, ...loaded.heartbeat },
+    security: { ...DEFAULT_CONFIG.security, ...loaded.security },
+  };
 }
 ```
 
@@ -86,25 +120,28 @@ private load(): Config {
 Uses dot notation to navigate nested objects:
 
 ```typescript
-public set(key: string, value: any): void {
-  const keys = key.split('.');
+public setValue(path: string, value: unknown): void {
+  const parts = path.split('.');
+  const lastPart = parts.pop();
+  if (!lastPart) return;
+
   let current: any = this.config;
 
   // Navigate to parent object
-  for (let i = 0; i < keys.length - 1; i++) {
-    if (!(keys[i] in current)) {
-      current[keys[i]] = {};  // Create missing intermediate objects
+  for (const part of parts) {
+    if (!(part in current)) {
+      current[part] = {};  // Create missing intermediate objects
     }
-    current = current[keys[i]];
+    current = current[part];
   }
 
   // Set the final value
-  current[keys[keys.length - 1]] = value;
+  current[lastPart] = value;
 }
 ```
 
 **Example:**
-- `set('heartbeat.interval', 60000)`
+- `setValue('heartbeat.interval', 60000)`
 - Splits to: `['heartbeat', 'interval']`
 - Navigates: `config` → `config.heartbeat`
 - Sets: `config.heartbeat.interval = 60000`
@@ -117,37 +154,46 @@ Atomicity is not guaranteed (no temp file + rename). This is acceptable because:
 - Manual recovery is easy (delete config.json, run `mudpuppy init`)
 
 ```typescript
-public save(): void {
-  const dir = join(homedir(), '.mudpuppy');
+save(): void {
+  const dir = getMudpuppyHome();
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-
-  writeFileSync(
-    this.configPath,
-    JSON.stringify(this.config, null, 2),  // Pretty-print
-    'utf-8'
-  );
+  writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
 }
 ```
 
 ### Workspace Management
 
-```typescript
-public ensureWorkspace(): void {
-  // Create main workspace
-  if (!existsSync(this.config.workspace)) {
-    mkdirSync(this.config.workspace, { recursive: true });
-  }
+The `initWorkspace()` function creates the directory structure:
 
-  // Create standard subdirectories
-  const dirs = ['memory', 'agents/default/sessions'];
+```typescript
+export function initWorkspace(): { created: string[]; existed: string[] } {
+  const home = getMudpuppyHome();
+  const dirs = [
+    '',                    // root
+    'workspace',           // soul/identity files
+    'workspace/memory',    // daily logs
+    'data',                // database, sessions
+    'data/sessions',       // session transcripts
+    'bot',                 // telegram bot daemon
+    'tools',               // tool documentation
+  ];
+
+  const created: string[] = [];
+  const existed: string[] = [];
+
   for (const dir of dirs) {
-    const path = this.getWorkspacePath(dir);
+    const path = join(home, dir);
     if (!existsSync(path)) {
       mkdirSync(path, { recursive: true });
+      created.push(path);
+    } else {
+      existed.push(path);
     }
   }
+
+  return { created, existed };
 }
 ```
 

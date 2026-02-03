@@ -2,6 +2,80 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## Universal Instructions (Apply to ALL Projects)
+
+These instructions apply universally and should be followed regardless of project.
+
+### PRD Handling
+
+**PRDs are permanent artifacts.** They document decisions, architecture, and rationale - even failed approaches have learning value.
+
+1. **Document completion separately**: Track progress in `PROGRESS.md`, not in the PRD itself. PRDs define requirements; progress files track execution.
+
+2. **Stop and test at milestones**: At the end of each phase/milestone:
+   - Stop implementation
+   - Run all tests (automated + manual)
+   - **Require human verification** before proceeding
+   - Document test results in PROGRESS.md
+   - Do NOT proceed to next phase without explicit approval
+
+3. **Archive PRDs with dates**: When a PRD is completed or abandoned:
+   - Rename with date prefix: `YYYY.MM.DD.PRDName.md`
+   - Move to `docs/archive/` or project root
+   - Never delete PRDs - they document decisions and learning
+   - Example: `2026.02.02.PRD-v1-skill-first.md`
+
+4. **Version PRDs during active development**:
+   - Use `PRD.md` for current active version
+   - Use `PRD-v2.md`, `PRD-v3.md` for major rewrites during comparison
+   - Once decided, archive the rejected version with date prefix
+
+### Milestone Testing Protocol
+
+Before marking any phase complete:
+
+```
+[ ] All automated tests pass
+[ ] Manual testing completed
+[ ] Human verification obtained (explicit approval)
+[ ] PROGRESS.md updated with results
+[ ] Known issues documented
+[ ] Ready for next phase (approved by human)
+```
+
+### Deliverables vs Scratch Work
+
+- **Deliverables**: Permanent outputs (code, docs, configs). Never delete without asking.
+- **Scratch/Temp**: Intermediate files, experiments, debugging. Disposable.
+- When in doubt, ask before deleting anything.
+
+### Guardrails (Learned Behaviors)
+
+Document mistakes here to prevent repeating them. Keep under 15 items.
+
+1. Always read a file before editing it
+2. Never delete user files without explicit permission
+3. Test at milestones - don't rush through phases
+4. Archive PRDs, don't delete them
+5. Use `~` or `$HOME` for paths, never hardcode `/home/username/...`
+6. Secrets go in `.env` or `secrets.env`, never in code or git
+
+*(Add new guardrails as mistakes happen)*
+
+### Continuous Improvement Loop
+
+Every failure strengthens the system:
+
+1. Identify what broke and why
+2. Fix the immediate issue
+3. Update documentation (CLAUDE.md, PRD, or code comments)
+4. Add guardrail if it's a repeatable mistake
+5. Next time → automatic success
+
+---
+
 ## Project Overview
 
 **Mudpuppy** 🐾 is a **more secure semi-clone** of OpenClaw, focusing on creating a fully autonomous AI agent that learns as it is used. Named after the aquatic salamander that never stops learning and evolving, Mudpuppy extends Claude Code directly with selected features from OpenClaw while prioritizing security and controlled autonomy.
@@ -17,6 +91,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Philosophy**: "Text > Brain" - no mental notes, everything written to files
 - Memory auto-syncing with file watchers
 - Embedding batching with retry logic for resilience
+
+**Atlas-agent improvements (adopted):**
+- **Typed memory entries**: fact, preference, event, insight, task, relationship
+- **Content hash deduplication**: SHA-256 hash prevents duplicate entries
+- **Memory access logging**: Track retrieval patterns for analytics/pruning
+- **Metadata fields**: confidence (0-1), importance (1-10), expiration dates
+- **Tool manifests**: Document available tools in `tools/manifest.md`
 
 ### 2. Autonomous Execution
 - **Cron scheduling system** with three types:
@@ -59,6 +140,14 @@ Critical conceptual framework for agent personality:
 - Draft streaming in DM threads
 - Session isolation per group
 - Multi-account capability
+
+**Architecture (Phase 1.5 refactoring):**
+- **MCP Tool + Skill Hybrid**: Telegram capabilities exposed as MCP tools, workflow defined in skill
+- **Separation of concerns**:
+  - **MCP Tool** = Capability (telegram_poll, telegram_send, telegram_pair, telegram_status)
+  - **Skill** = Persona/workflow (what to do with messages, personality injection)
+  - **Hook** = Trigger (auto-check messages on session start)
+- **Tool manifest**: `~/.mudpuppy/tools/manifest.md` documents available tools
 
 ### 5. Tool Usage and Availability
 - **Tool profiles**: minimal, coding, messaging, full
@@ -175,13 +264,21 @@ This clone prioritizes security over feature parity with OpenClaw:
 │   ├── BOOTSTRAP.md       # First-run ritual (deleted after)
 │   └── memory/            # Daily logs
 │       └── YYYY-MM-DD.md
+├── tools/                 # Tool documentation (atlas-agent pattern)
+│   └── manifest.md        # Index of available tools
+├── mcp-server/            # MCP server for tool definitions (Phase 1.5)
+│   └── ...
 ├── agents/                # Per-agent data
 │   └── <agentId>/
 │       ├── sessions/      # Session transcripts (JSONL)
+│       ├── memory.db      # SQLite + embeddings
 │       └── ...
 ├── cron/
 │   └── jobs.json         # Scheduled tasks
-└── config.json           # Global configuration
+├── config.json           # Global configuration
+├── secrets.env           # Environment secrets (gitignored)
+├── telegram-queue.jsonl  # Incoming Telegram messages
+└── telegram-responses.jsonl # Outgoing Telegram responses
 ```
 
 ## Integration Points with Claude Code
@@ -198,26 +295,37 @@ This project extends Claude Code by:
 
 **Planning & Documentation:**
 - `CLAUDE.md` - This file, guidance for AI assistants
-- `PRD.md` - Product Requirements Document with detailed specifications
+- `PRD.md` - Product Requirements Document with detailed specifications (v2 MCP-first)
 - `PROGRESS.md` - Development progress tracker (UPDATE EVERY SESSION)
 - `docs/` - Comprehensive module documentation (see docs/README.md)
 
-**Implementation:**
-- `src/config.ts` - Configuration system (Phase 0 ✅)
-- `src/cli/index.ts` - CLI entry point (Phase 0 ✅)
-- `tests/config.test.ts` - Config tests (Phase 0 ✅)
+**Implementation (v2 MCP-first architecture):**
+- `src/index.ts` - Main exports
+- `src/config.ts` - Configuration system
+- `src/mcp-server.ts` - MCP server entry point
+- `src/cli/index.ts` - CLI commands
+- `src/tools/index.ts` - Tool registry (config_get, config_set)
+
+**MCP Integration:**
+- `.mcp.json` - MCP server configuration for Claude Code
 
 **Documentation Status:**
-- ✅ `docs/config/` - Complete (README, API, IMPLEMENTATION, TESTING)
-- ⬜ `docs/telegram/` - Not started (Phase 1)
-- ⬜ `docs/soul/` - Not started (Phase 2)
-- ⬜ `docs/memory/` - Not started (Phase 3)
+- ✅ `docs/config/` - Updated (README, API, IMPLEMENTATION, TESTING)
+- 🔄 `docs/telegram/` - Planned architecture documented (README only)
+- ⬜ `docs/soul/` - Not started (Phase 3)
+- ⬜ `docs/memory/` - Not started (Phase 2)
 - ⬜ `docs/autonomy/` - Not started (Phase 4)
 - ⬜ `docs/security/` - Not started (Phase 5)
 
-**Status:** Phase 0 complete ✅. Ready for Phase 1 (Telegram Integration).
+**Status:** Phase 0 in progress (MCP server foundation). v1 skill-first approach archived.
 
-**Next Steps:** Begin Phase 1 - see PROGRESS.md for details.
+**Next Steps:**
+1. Complete Phase 0: MCP server skeleton, CLI, workspace init
+2. Phase 1: Telegram tools (telegram_poll, telegram_send, telegram_pair, telegram_status)
+3. Phase 2: Memory tools
+4. See PRD.md for detailed requirements
+
+**Note:** Memory patterns (typed entries, deduplication, access logging) were adopted from atlas-agent and are documented in PRD.md.
 
 ## Development Philosophy
 
@@ -316,16 +424,18 @@ See `docs/config/` for the complete example of proper documentation.
 
 ### Phase Execution Order
 
-**IMPORTANT:** Phases must be completed in this order:
+**IMPORTANT:** Phases must be completed in this order (v2 MCP-first architecture):
 
-1. **Phase 0: Project Setup** - TypeScript, tooling, CLI basics
-2. **Phase 1: Telegram Integration** (PRIORITY) - Enable remote testing
-3. **Phase 2: Soul & Identity** - Bootstrap files, personality
-4. **Phase 3: Memory Persistence** - Hybrid search, knowledge accumulation
-5. **Phase 4: Basic Autonomy** - Heartbeat, scheduled tasks
-6. **Phase 5: Security & Polish** - Hardening, documentation
+1. **Phase 0: Foundation** - MCP server skeleton, config, CLI 🔄 In Progress
+2. **Phase 1: Telegram Tools** - telegram_poll, telegram_send, telegram_pair, telegram_status ⬜
+3. **Phase 2: Memory Tools** - Hybrid search, knowledge accumulation ⬜
+4. **Phase 3: Soul/Identity Tools** - Bootstrap files, personality persistence ⬜
+5. **Phase 4: Autonomy** - Heartbeat, scheduled tasks ⬜
+6. **Phase 5: Skill Layer & Polish** - Persona, documentation, security audit ⬜
 
 **Rationale for Telegram-first:** Enables remote testing and async development workflow while away from house.
+
+**Architecture:** MCP tools provide capabilities, optional skill layer provides persona/workflow.
 
 ### Session Workflow
 

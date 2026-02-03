@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mudpuppy": {
+      "command": "node",
+      "args": ["/home/localadmin/Desktop/workspace/mudpuppy/dist/mcp-server.js"],
+      "env": {
+        "MUDPUPPY_HOME": "/home/localadmin/.mudpuppy"
+      }
+    }
+  }
+}

@@ -1,367 +1,247 @@
-# Mudpuppy 🐾 - Development Progress
+# Mudpuppy v2 - Development Progress
 
 **Last Updated:** 2026-02-02
-**Current Phase:** Phase 1 - Telegram Integration
-**Status:** Ready to Start
+**Architecture:** MCP-first
+**Current Phase:** Phase 0 - Foundation
+**Status:** Starting
 
-## Purpose
+---
 
-This file tracks development progress across multiple sessions and context refreshes. Update this file at the end of each work session to maintain continuity.
+## Decisions Log
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-02-02 | MCP-first architecture | Clean separation: tools=capabilities, skill=persona |
+| 2026-02-02 | Telegram first (Phase 1) | Enables remote testing while away |
+| 2026-02-02 | Local embeddings | Privacy-first, no API costs, using all-MiniLM-L6-v2 |
+| 2026-02-02 | Unix socket for bot IPC | Fast, secure, standard for daemons |
+| 2026-02-02 | Fresh start from v1 | v1 skill-first approach was messy, clean slate better |
 
 ---
 
 ## Phase Status Overview
 
-| Phase | Status | Started | Completed | Sessions |
-|-------|--------|---------|-----------|----------|
-| Phase 0: Project Setup | ✅ Complete | 2026-02-02 | 2026-02-02 | 1 |
-| Phase 1: Telegram Integration | ⬜ Not Started | - | - | 0 |
-| Phase 2: Soul & Identity | ⬜ Not Started | - | - | 0 |
-| Phase 3: Memory Persistence | ⬜ Not Started | - | - | 0 |
-| Phase 4: Basic Autonomy | ⬜ Not Started | - | - | 0 |
-| Phase 5: Security & Polish | ⬜ Not Started | - | - | 0 |
-
-**Status Legend:**
-- ⬜ Not Started
-- 🔄 In Progress
-- ✅ Complete (tested and validated)
-- ⚠️ Blocked
-- 🔁 Needs Rework
+| Phase | Status | Started | Completed |
+|-------|--------|---------|-----------|
+| Phase 0: Foundation | 🔄 In Progress | 2026-02-02 | - |
+| Phase 1: Telegram Tools | ⬜ Not Started | - | - |
+| Phase 2: Memory Tools | ⬜ Not Started | - | - |
+| Phase 3: Soul/Identity Tools | ⬜ Not Started | - | - |
+| Phase 4: Autonomy (Heartbeat) | ⬜ Not Started | - | - |
+| Phase 5: Skill Layer & Polish | ⬜ Not Started | - | - |
 
 ---
 
-## Phase 0: Project Setup & Foundation
+## Phase 0: Foundation (MCP Server Skeleton)
 
-**Status:** ✅ Complete
-**Started:** 2026-02-02
-**Completed:** 2026-02-02
+**Status:** 🔄 In Progress
+**Objective:** Create MCP server infrastructure and basic tooling.
 
-### Acceptance Criteria Checklist
+### Acceptance Criteria
 
-- [x] `npm run build` compiles TypeScript without errors
-- [x] `npm run test` runs test suite successfully (4 tests passing)
-- [x] Basic CLI entry point exists and runs (`openclaw --version`)
-- [x] Configuration can be loaded from `~/.mudpuppy/config.json`
-- [x] All secrets/tokens properly gitignored
+- [ ] MCP server starts and registers with Claude Code
+- [ ] `mudpuppy init` creates workspace structure
+- [ ] `mudpuppy config get/set` works
+- [ ] Config loads from `~/.mudpuppy/config.json`
+- [ ] All paths use `$MUDPUPPY_HOME` or `~`
+- [ ] `npm run build` succeeds
+- [ ] Basic tests pass
 
-### Testing Status
-- [x] Manual: Build and CLI execution verified
-- [x] Unit tests: Configuration loading (4 tests passing)
-- [x] Human validation: Project structure reviewed
+### Deliverables
 
-### Implementation Summary
-- Created TypeScript project with ESM modules
-- Set up build tooling (tsc) with proper tsconfig
-- Configured vitest for testing
-- Implemented ConfigManager with JSON-based configuration
-- Created CLI with commands: init, config get/set, --version, --help
-- Set up git repository with comprehensive .gitignore
-- Created workspace structure at ~/.mudpuppy/
+- [ ] `src/mcp-server.ts` - MCP server entry point
+- [ ] `src/config.ts` - Configuration manager
+- [ ] `src/cli/index.ts` - CLI commands
+- [ ] `src/tools/index.ts` - Tool registry
 
-### Files Created
-- package.json, tsconfig.json, vitest.config.ts
-- src/config.ts (ConfigManager)
-- src/cli/index.ts (CLI entry point)
-- src/index.ts (main exports)
-- tests/config.test.ts
-- .gitignore, README.md
+### Testing Checklist
 
-### Blockers
-- None
+- [ ] Unit: Config loading, path resolution
+- [ ] Integration: MCP server registration
+- [ ] Manual: CLI commands work
+- [ ] **Human verification obtained**
 
 ---
 
-## Phase 1: Telegram Integration
+## Phase 1: Telegram Tools
 
 **Status:** ⬜ Not Started
-**Started:** -
-**Completed:** -
+**Objective:** Implement Telegram integration as MCP tools.
 
-### Acceptance Criteria Checklist
+### Acceptance Criteria
 
-- [ ] Bot comes online when `openclaw start` runs
-- [ ] User can send `/start` to bot
-- [ ] Pairing request appears in local terminal
-- [ ] After approval, user is paired
-- [ ] Messages sent to bot appear in local agent context
-- [ ] Agent responses sent back to Telegram
-- [ ] `/status` command returns bot uptime and paired users
-- [ ] Bot gracefully handles rate limits
-- [ ] Bot token is NOT in git repository
+- [ ] Bot starts as daemon via `mudpuppy telegram start`
+- [ ] `telegram_poll` returns pending messages
+- [ ] `telegram_send` delivers messages successfully
+- [ ] `telegram_pair` triggers approval flow
+- [ ] `telegram_status` returns accurate stats
+- [ ] Messages from unpaired users are rejected
+- [ ] Bot token stored securely (not in git)
+- [ ] Bot survives restarts
+- [ ] Unix socket IPC working
 
-### Testing Status
-- [ ] Manual: Send messages via Telegram
-- [ ] Integration: Full pairing flow
-- [ ] Edge cases: Rate limiting, restart handling
-- [ ] Human validation: 24-hour stability test
+### Testing Checklist
 
-### Notes
-- Bot token location: `~/.mudpuppy/secrets.env`
-- grammY library docs: https://grammy.dev/
-
-### Blockers
-- Requires Phase 0 completion
+- [ ] Unit: Each tool in isolation (mocked bot)
+- [ ] Integration: Tool → Bot → Telegram roundtrip
+- [ ] Manual: Send messages from phone, verify delivery
+- [ ] **Human verification obtained**
 
 ---
 
-## Phase 2: Soul & Identity System
+## Phase 2: Memory Tools
 
 **Status:** ⬜ Not Started
-**Started:** -
-**Completed:** -
+**Objective:** Implement memory persistence with hybrid search.
 
-### Acceptance Criteria Checklist
+### Acceptance Criteria
 
-- [ ] On first run, BOOTSTRAP.md guides user through setup
-- [ ] All bootstrap files created in `~/.mudpuppy/`
-- [ ] Files injected into agent context at session start
-- [ ] Agent maintains consistent personality across sessions
-- [ ] Agent can propose changes to SOUL.md (with approval)
-- [ ] Manual file edits reflected in next session
-- [ ] Diff shown before approving soul updates
+- [ ] `memory_add` creates entries with all metadata
+- [ ] Duplicate content returns existing entry (deduplication works)
+- [ ] `memory_search` returns relevant results in <500ms
+- [ ] Hybrid search combines vector + keyword scores
+- [ ] Local embeddings working (all-MiniLM-L6-v2)
+- [ ] Access logging records every retrieval
+- [ ] `memory_stats` returns accurate statistics
+- [ ] File changes auto-indexed
+- [ ] Daily log created on first activity each day
 
-### Testing Status
-- [ ] Manual: First-run experience
-- [ ] Unit tests: File loading, template rendering
-- [ ] Integration: Manual file edit reload
-- [ ] Human validation: 3+ session personality test
+### Testing Checklist
 
-### Notes
-- Bootstrap files: SOUL.md, IDENTITY.md, AGENTS.md, USER.md, BOOTSTRAP.md
-
-### Blockers
-- Requires Phase 0 completion
+- [ ] Unit: Search algorithm, deduplication, scoring
+- [ ] Integration: Add → Search → Verify
+- [ ] Performance: 10,000 entries, verify speed <500ms
+- [ ] Deduplication: Add same content twice
+- [ ] **Human verification obtained**
 
 ---
 
-## Phase 3: Memory Persistence System
+## Phase 3: Soul/Identity Tools
 
 **Status:** ⬜ Not Started
-**Started:** -
-**Completed:** -
+**Objective:** Implement personality persistence.
 
-### Acceptance Criteria Checklist
+### Acceptance Criteria
 
-- [ ] Memory database created at `~/.mudpuppy/agents/default/memory.db`
-- [ ] Daily log auto-created when agent runs
-- [ ] Session transcripts saved to JSONL
-- [ ] `memory_search` tool returns relevant results
-- [ ] Hybrid search works (both vector and keyword)
-- [ ] Search results in <500ms for 1000+ entries
-- [ ] File changes auto-indexed within 5 seconds
-- [ ] Manual memory edits searchable immediately
+- [ ] First run creates all bootstrap files
+- [ ] `soul_read` returns file contents
+- [ ] `soul_propose_update` creates pending approval
+- [ ] Approval shows diff before accepting
+- [ ] Manual file edits detected and respected
+- [ ] Approval can be given via CLI
 
-### Testing Status
-- [ ] Unit tests: Search, embeddings, database
-- [ ] Integration: Add and search memories
-- [ ] Performance: 10,000 entries search speed
-- [ ] Human validation: 1-week memory recall test
+### Testing Checklist
 
-### Notes
-- Embedding provider decision pending: OpenAI vs local model
-- sqlite-vec extension required
-
-### Blockers
-- Requires Phase 0 completion
+- [ ] Unit: File loading, diff generation
+- [ ] Integration: Propose → Approve → Verify update
+- [ ] Manual: Edit SOUL.md manually, verify agent sees changes
+- [ ] **Human verification obtained**
 
 ---
 
-## Phase 4: Basic Autonomy (Heartbeat)
+## Phase 4: Autonomy (Heartbeat)
 
 **Status:** ⬜ Not Started
-**Started:** -
-**Completed:** -
+**Objective:** Implement periodic self-initiated execution.
 
-### Acceptance Criteria Checklist
+### Acceptance Criteria
 
-- [ ] Heartbeat triggers every N minutes (configurable)
-- [ ] Reads unchecked tasks from HEARTBEAT.md
-- [ ] Executes tasks with approval for risky actions
-- [ ] All actions logged to audit trail
+- [ ] Heartbeat triggers at configured interval
 - [ ] Respects active hours configuration
-- [ ] Sends notifications to Telegram on completion
-- [ ] Can pause/resume via CLI and Telegram
-- [ ] No heartbeat when main session active
+- [ ] Parses unchecked tasks from HEARTBEAT.md
+- [ ] Approval required for risky actions
+- [ ] All actions logged to audit trail
+- [ ] Pause/resume works via tools and CLI
+- [ ] Telegram notification on completion (if configured)
 - [ ] Failed heartbeat doesn't crash system
 
-### Testing Status
-- [ ] Unit tests: Parser, scheduler, executor
+### Testing Checklist
+
+- [ ] Unit: Parser, scheduler timing
 - [ ] Integration: Full heartbeat cycle
-- [ ] Edge cases: Restart, clock changes
+- [ ] Edge cases: System restart, clock changes
 - [ ] Security: Verify approval requirements
-- [ ] Human validation: 48-hour reliability test
-
-### Notes
-- Depends on Telegram integration for notifications
-
-### Blockers
-- Requires Phase 1 completion (Telegram)
+- [ ] **Human verification obtained**
 
 ---
 
-## Phase 5: Security Hardening & Polish
+## Phase 5: Skill Layer & Polish
 
 **Status:** ⬜ Not Started
-**Started:** -
-**Completed:** -
+**Objective:** Add persona layer and finalize for production use.
 
-### Acceptance Criteria Checklist
+### Acceptance Criteria
 
-- [ ] All secrets properly isolated
-- [ ] Approval UI is clear and user-friendly
-- [ ] Audit log complete and searchable
-- [ ] No security vulnerabilities in testing
+- [ ] Skill loads and works with MCP tools
+- [ ] Personality consistent across sessions
+- [ ] Setup script works on fresh machine
 - [ ] Documentation complete
-- [ ] Error messages helpful
-- [ ] System recovers from crashes
-- [ ] Backups created automatically
+- [ ] No hardcoded paths
+- [ ] Security audit passed
+- [ ] Performance targets met
 
-### Testing Status
-- [ ] Security audit: Approval points review
-- [ ] Penetration test: Bypass attempts
-- [ ] Stress test: High message volume
-- [ ] Human validation: 1-week production use
+### Testing Checklist
 
-### Notes
-- Final phase before daily use
-
-### Blockers
-- Requires all previous phases
+- [ ] Manual: Full workflow testing
+- [ ] Portability: Test on fresh VM
+- [ ] Security: Penetration testing
+- [ ] **Human verification: 1 week daily use**
 
 ---
 
 ## Session Log
 
-### Session 1 - 2026-02-02
-**Phase:** Planning
+### Session 1 - 2026-02-02 (v2 Start)
+
+**Phase:** v1 → v2 Migration + Phase 0 Start
+
 **Accomplishments:**
-- Created CLAUDE.md with project overview
-- Created PRD.md with detailed requirements
-- Created PROGRESS.md tracking file
-- Established test-driven development approach
-- Reordered phases (Telegram first)
+- Reviewed v1 implementation, identified architectural issues
+- Compared with atlas-agent, adopted memory patterns
+- Designed MCP-first architecture (PRD v2)
+- Archived v1 PRD as `2026.02.02.PRD-v1-skill-first.md`
+- Archived v1 source code to `docs/archive/v1-src/`
+- Removed v1 skill from `~/.claude/skills/mudpuppy/`
+- Added Universal Instructions to CLAUDE.md (PRD handling, guardrails)
+- Made key decisions: local embeddings, Unix socket IPC, fresh start
+- Beginning Phase 0 implementation
 
-**Next Session:**
-- Begin Phase 0: Project Setup
-- Initialize TypeScript project
-- Set up build tooling
+**Decisions Made:**
+- Telegram first (enables remote testing)
+- Local embeddings with all-MiniLM-L6-v2 (privacy, no API costs)
+- Unix socket for bot ↔ MCP server IPC
+- Fresh start (don't salvage v1 code)
 
-**Issues/Decisions:**
-- Decided to prioritize Telegram integration for remote testing
-- Established approval-first security model
-- Chose TypeScript/Node.js stack
-
-### Session 2 - 2026-02-02
-**Phase:** Phase 0 - Project Setup
-**Status:** ✅ Complete
-**Accomplishments:**
-- Initialized npm project with TypeScript, vitest, esbuild
-- Created comprehensive tsconfig.json with ESM modules
-- Implemented ConfigManager with JSON-based configuration system
-- Built CLI with init, config get/set, version, help commands
-- Set up git repository with proper .gitignore
-- Created test suite (4 tests, all passing)
-- Successfully built and tested all components
-- Initialized workspace at ~/.mudpuppy/
-
-**Testing Results:**
-- ✓ Build compiles without errors
-- ✓ All 4 unit tests passing
-- ✓ CLI --version works
-- ✓ CLI init creates workspace and config.json
-- ✓ CLI config get/set works correctly
-- ✓ Secrets properly gitignored
-
-**Next Session:**
-- Begin Phase 1: Telegram Integration
-- Install grammY library
-- Create basic bot
-- Implement pairing system
-
-**Issues/Decisions:**
-- Used ESM modules (type: "module" in package.json)
-- Chose tsc over esbuild for build (better type checking)
-- Default config has all features disabled (must opt-in)
+**Next:**
+- Set up MCP SDK
+- Create MCP server skeleton
+- Implement portable config system
+- Basic CLI
 
 ---
 
-## Current Blockers
+## Archived Materials
 
-None - ready to begin Phase 0
-
----
-
-## Key Decisions Log
-
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-02-02 | Telegram first (Phase 1) | Enables remote testing while away from house |
-| 2026-02-02 | TypeScript/Node.js | Compatibility with OpenClaw, good async support |
-| 2026-02-02 | Approval-first security | Maximum safety for autonomous operations |
-| 2026-02-02 | Test each phase fully | Prevent technical debt, ensure reliability |
-
----
-
-## Testing Notes
-
-### Human-in-the-Loop Validation Requirements
-
-Each phase requires manual validation by primary user before proceeding:
-
-- **Phase 0:** Review project structure, verify builds
-- **Phase 1:** Use Telegram bot for 24 hours, verify stability
-- **Phase 2:** Chat across 3+ sessions, verify personality persistence
-- **Phase 3:** Use for 1 week, verify memory recall accuracy
-- **Phase 4:** Run for 48 hours, verify heartbeat reliability
-- **Phase 5:** Use as primary agent for 1 week, verify production readiness
-
----
-
-## Future Enhancements (Post-MVP)
-
-Ideas for future phases (not in current scope):
-- Full cron scheduling
-- Docker sandbox isolation
-- Subagent spawning
-- Web dashboard UI
-- Additional messaging platforms
-- Plugin SDK
-- Multi-agent support
+- `docs/archive/2026.02.02.PRD-v1-skill-first.md` - Original skill-first PRD
+- `docs/archive/v1-src/` - Original v1 source code
 
 ---
 
 ## Quick Reference
 
-**Project Root:** `/home/localadmin/Desktop/workspace/mudpuppy`
-**Workspace:** `~/.mudpuppy/`
-**OpenClaw Reference:** `/home/localadmin/Desktop/workspace/openclaw`
-**OpenClaw Workspace:** `/home/localadmin/clawd`
+**Workspace:** `~/.mudpuppy/` (or `$MUDPUPPY_HOME`)
+**Project:** `~/Desktop/workspace/mudpuppy/`
 
 **Key Files:**
-- `CLAUDE.md` - AI assistant guidance
-- `PRD.md` - Product requirements
+- `PRD.md` - v2 Product Requirements (MCP-first)
+- `CLAUDE.md` - AI guidance + universal instructions
 - `PROGRESS.md` - This file
 
 **Commands (when implemented):**
 ```bash
-openclaw init          # Initialize agent
-openclaw start         # Start with heartbeat
-openclaw stop          # Stop agent
-openclaw status        # Status check
-openclaw memory search # Search memories
-openclaw telegram pair # Pair Telegram user
+mudpuppy init              # Initialize workspace
+mudpuppy config get/set    # Configuration
+mudpuppy telegram start    # Start bot daemon
+mudpuppy telegram stop     # Stop bot daemon
+mudpuppy status            # System status
 ```
-
----
-
-## Update Instructions
-
-**At the end of each session, update:**
-1. Phase status (⬜ → 🔄 → ✅)
-2. Acceptance criteria checkboxes
-3. Testing status checkboxes
-4. Session log entry
-5. Current blockers
-6. Notes for next session
-
-**Keep this file in sync with actual progress to maintain continuity across sessions.**

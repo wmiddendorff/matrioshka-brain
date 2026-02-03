@@ -11,8 +11,8 @@ mudpuppy config get
 
 # Output:
 # {
-#   "version": "0.1.0",
-#   "workspace": "/home/user/.mudpuppy",
+#   "version": "2.0.0",
+#   "telegram": { ... },
 #   ...
 # }
 ```
@@ -37,9 +37,6 @@ mudpuppy config set telegram.enabled true
 # Set string
 mudpuppy config set memory.embeddingProvider openai
 
-# Set array (JSON)
-mudpuppy config set telegram.pairedUsers '[123456,789012]'
-
 # Set object (JSON)
 mudpuppy config set heartbeat.activeHours '{"start":"09:00","end":"17:00","timezone":"America/Los_Angeles"}'
 ```
@@ -61,15 +58,20 @@ mudpuppy init
 
 # Output:
 # Initializing Mudpuppy workspace...
-# ✓ Workspace created at: /home/user/.mudpuppy
-# ✓ Configuration saved
+# Created: /home/user/.mudpuppy
+# Created: /home/user/.mudpuppy/workspace
+# ...
 ```
 
 Creates:
 - `~/.mudpuppy/` directory
 - `~/.mudpuppy/config.json` with defaults
-- `~/.mudpuppy/memory/` directory
-- `~/.mudpuppy/agents/default/sessions/` directory
+- `~/.mudpuppy/workspace/` - Soul/identity files
+- `~/.mudpuppy/workspace/memory/` - Daily logs
+- `~/.mudpuppy/data/` - Database and sessions
+- `~/.mudpuppy/data/sessions/` - Session transcripts
+- `~/.mudpuppy/bot/` - Telegram bot daemon
+- `~/.mudpuppy/tools/` - Tool documentation
 
 ## Programmatic API
 
@@ -86,13 +88,13 @@ const config = new ConfigManager();
 ```
 
 **Behavior:**
-- Loads config from `~/.mudpuppy/config.json`
+- Loads config from `~/.mudpuppy/config.json` (or `$MUDPUPPY_HOME/config.json`)
 - Creates default config if file doesn't exist
 - Merges loaded config with defaults (handles missing fields)
 
 #### Methods
 
-##### `get(): Config`
+##### `get(): MudpuppyConfig`
 
 Returns the entire configuration object.
 
@@ -101,14 +103,23 @@ const cfg = config.get();
 console.log(cfg.heartbeat.interval);  // 1800000
 ```
 
-##### `set(key: string, value: any): void`
+##### `getValue<T>(path: string): T | undefined`
+
+Gets a configuration value using dot notation.
+
+```typescript
+const interval = config.getValue<number>('heartbeat.interval');
+const enabled = config.getValue<boolean>('telegram.enabled');
+```
+
+##### `setValue(path: string, value: unknown): void`
 
 Sets a configuration value using dot notation.
 
 ```typescript
-config.set('heartbeat.enabled', true);
-config.set('heartbeat.interval', 60000);
-config.set('telegram.pairedUsers', [123456, 789012]);
+config.setValue('heartbeat.enabled', true);
+config.setValue('heartbeat.interval', 60000);
+config.setValue('memory.hybridWeights', { vector: 0.8, keyword: 0.2 });
 ```
 
 **Note:** Changes are in-memory only until `save()` is called.
@@ -118,68 +129,92 @@ config.set('telegram.pairedUsers', [123456, 789012]);
 Saves the configuration to disk.
 
 ```typescript
-config.set('heartbeat.enabled', true);
+config.setValue('heartbeat.enabled', true);
 config.save();  // Writes to ~/.mudpuppy/config.json
 ```
 
 **Throws:** Error if unable to write file.
 
-##### `getWorkspacePath(...paths: string[]): string`
+##### `reset(): void`
 
-Returns an absolute path within the workspace.
+Resets configuration to defaults (in-memory only).
 
 ```typescript
-config.getWorkspacePath('memory');
-// → /home/user/.mudpuppy/memory
-
-config.getWorkspacePath('agents', 'default', 'sessions');
-// → /home/user/.mudpuppy/agents/default/sessions
-
-config.getWorkspacePath('memory', '2026-02-02.md');
-// → /home/user/.mudpuppy/memory/2026-02-02.md
+config.reset();
+config.save();  // Save to persist reset
 ```
 
-##### `ensureWorkspace(): void`
+##### `getConfigPath(): string`
 
-Creates the workspace directory and standard subdirectories if they don't exist.
+Returns the path to the config file.
 
 ```typescript
-config.ensureWorkspace();
+const path = config.getConfigPath();
+// → /home/user/.mudpuppy/config.json
 ```
 
-**Creates:**
-- `~/.mudpuppy/`
-- `~/.mudpuppy/memory/`
-- `~/.mudpuppy/agents/default/sessions/`
+### Utility Functions
 
-## TypeScript Types
+##### `getMudpuppyHome(): string`
 
-### `Config`
+Returns the Mudpuppy home directory.
 
 ```typescript
-interface Config {
-  version: string;
-  workspace: string;
-  heartbeat: HeartbeatConfig;
-  telegram: TelegramConfig;
-  memory: MemoryConfig;
-  security: SecurityConfig;
+import { getMudpuppyHome } from 'mudpuppy';
+
+const home = getMudpuppyHome();
+// Uses $MUDPUPPY_HOME or defaults to ~/.mudpuppy
+```
+
+##### `resolvePath(relativePath: string): string`
+
+Resolves a path relative to MUDPUPPY_HOME.
+
+```typescript
+import { resolvePath } from 'mudpuppy';
+
+const configPath = resolvePath('config.json');
+// → /home/user/.mudpuppy/config.json
+
+const memoryPath = resolvePath('workspace/memory');
+// → /home/user/.mudpuppy/workspace/memory
+```
+
+##### `initWorkspace(): { created: string[]; existed: string[] }`
+
+Initializes the workspace directory structure.
+
+```typescript
+import { initWorkspace } from 'mudpuppy';
+
+const result = initWorkspace();
+console.log('Created:', result.created);
+console.log('Already existed:', result.existed);
+```
+
+##### `isWorkspaceInitialized(): boolean`
+
+Checks if the workspace has been initialized.
+
+```typescript
+import { isWorkspaceInitialized } from 'mudpuppy';
+
+if (!isWorkspaceInitialized()) {
+  console.log('Run: mudpuppy init');
 }
 ```
 
-### `HeartbeatConfig`
+## TypeScript Types
+
+### `MudpuppyConfig`
 
 ```typescript
-interface HeartbeatConfig {
-  enabled: boolean;
-  interval: number;  // milliseconds
-  activeHours?: {
-    start: string;   // "HH:MM"
-    end: string;     // "HH:MM"
-    timezone: string;  // IANA timezone
-  };
-  requireApproval: boolean;
-  maxActionsPerBeat: number;
+interface MudpuppyConfig {
+  version: string;
+  telegram: TelegramConfig;
+  memory: MemoryConfig;
+  heartbeat: HeartbeatConfig;
+  security: SecurityConfig;
 }
 ```
 
@@ -188,20 +223,40 @@ interface HeartbeatConfig {
 ```typescript
 interface TelegramConfig {
   enabled: boolean;
-  botToken?: string;
-  pairedUsers: number[];
-  enableGroups: boolean;
-  notifyHeartbeat: boolean;
+  allowGroups: boolean;
 }
 ```
+
+Note: Bot token is stored in `~/.mudpuppy/secrets.env`, not in config.
 
 ### `MemoryConfig`
 
 ```typescript
 interface MemoryConfig {
+  embeddingProvider: 'local' | 'openai' | 'none';
+  embeddingModel: string;  // e.g., 'Xenova/all-MiniLM-L6-v2'
+  hybridWeights: {
+    vector: number;   // Weight for vector similarity (0-1)
+    keyword: number;  // Weight for keyword matching (0-1)
+  };
+  autoIndex: boolean;
+  indexInterval: number;  // milliseconds
+}
+```
+
+### `HeartbeatConfig`
+
+```typescript
+interface HeartbeatConfig {
   enabled: boolean;
-  embeddingProvider: 'openai' | 'local';
-  searchMode: 'hybrid' | 'vector' | 'keyword';
+  interval: number;  // milliseconds (default: 1800000 = 30 min)
+  activeHours?: {
+    start: string;   // "HH:MM"
+    end: string;     // "HH:MM"
+    timezone: string;  // IANA timezone
+  };
+  maxActionsPerBeat: number;
+  requireApproval: boolean;
 }
 ```
 
@@ -209,9 +264,69 @@ interface MemoryConfig {
 
 ```typescript
 interface SecurityConfig {
-  approvalRequired: boolean;
+  approvalRequired: string[];  // Tool names requiring approval
   auditLog: boolean;
-  sandboxMode: 'off' | 'non-main' | 'all';
+  maxMessageLength: number;
+}
+```
+
+## Default Configuration
+
+```json
+{
+  "version": "2.0.0",
+  "telegram": {
+    "enabled": false,
+    "allowGroups": false
+  },
+  "memory": {
+    "embeddingProvider": "local",
+    "embeddingModel": "Xenova/all-MiniLM-L6-v2",
+    "hybridWeights": {
+      "vector": 0.7,
+      "keyword": 0.3
+    },
+    "autoIndex": true,
+    "indexInterval": 5000
+  },
+  "heartbeat": {
+    "enabled": false,
+    "interval": 1800000,
+    "maxActionsPerBeat": 5,
+    "requireApproval": true
+  },
+  "security": {
+    "approvalRequired": ["soul_propose_update", "telegram_pair"],
+    "auditLog": true,
+    "maxMessageLength": 4096
+  }
+}
+```
+
+## MCP Tools
+
+Configuration is also accessible via MCP tools:
+
+### `config_get`
+
+Get a configuration value.
+
+```json
+{
+  "path": "telegram.enabled"
+}
+```
+
+Returns the value at the specified path, or full config if path is omitted.
+
+### `config_set`
+
+Set a configuration value.
+
+```json
+{
+  "path": "telegram.enabled",
+  "value": true
 }
 ```
 
@@ -239,13 +354,18 @@ import { ConfigManager } from 'mudpuppy';
 const config = new ConfigManager();
 
 // Enable features
-config.set('telegram.enabled', true);
-config.set('memory.enabled', true);
-config.set('heartbeat.enabled', true);
+config.setValue('telegram.enabled', true);
+config.setValue('heartbeat.enabled', true);
+
+// Configure memory weights
+config.setValue('memory.hybridWeights', {
+  vector: 0.8,
+  keyword: 0.2
+});
 
 // Configure heartbeat
-config.set('heartbeat.interval', 1800000);  // 30 minutes
-config.set('heartbeat.activeHours', {
+config.setValue('heartbeat.interval', 1800000);  // 30 minutes
+config.setValue('heartbeat.activeHours', {
   start: '09:00',
   end: '23:00',
   timezone: 'America/Los_Angeles'
@@ -253,17 +373,13 @@ config.set('heartbeat.activeHours', {
 
 // Save changes
 config.save();
-
-// Get workspace paths
-const memoryDir = config.getWorkspacePath('memory');
-const sessionsDir = config.getWorkspacePath('agents', 'default', 'sessions');
 ```
 
 ## Error Handling
 
 ```typescript
 try {
-  config.set('heartbeat.interval', 60000);
+  config.setValue('heartbeat.interval', 60000);
   config.save();
 } catch (error) {
   console.error('Failed to save config:', error);
@@ -271,6 +387,6 @@ try {
 ```
 
 Common errors:
-- **Permission denied**: Can't write to `~/.mudpuppy/config.json`
+- **Permission denied**: Can't write to config file
 - **Invalid JSON**: Malformed JSON in config value
-- **Missing directory**: Parent directory doesn't exist (use `ensureWorkspace()`)
+- **Missing directory**: Parent directory doesn't exist (use `initWorkspace()`)

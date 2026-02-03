@@ -2,15 +2,40 @@
 
 This directory contains comprehensive documentation for all modules and systems in Mudpuppy.
 
+## Architecture
+
+Mudpuppy v2 uses an **MCP-first architecture**:
+- All capabilities exposed as MCP tools
+- Claude Code connects via MCP protocol
+- Optional skill layer for persona/workflow
+
+```
+┌─────────────────┐
+│   Claude Code   │
+└────────┬────────┘
+         │ MCP Protocol
+         ▼
+┌─────────────────┐     ┌──────────────────┐
+│   MCP Server    │◄───►│  Bot Daemon      │
+│   (tools)       │     │  (Telegram)      │
+└────────┬────────┘     └──────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   ~/.mudpuppy   │
+│   (workspace)   │
+└─────────────────┘
+```
+
 ## Documentation Structure
 
 Each module has its own directory with detailed documentation:
 
 - **[config/](./config/)** - Configuration system and settings management
-- **[memory/](./memory/)** - Memory persistence, hybrid search, embeddings (Phase 3)
-- **[soul/](./soul/)** - Soul/Identity system, bootstrap files (Phase 2)
-- **[autonomy/](./autonomy/)** - Heartbeat engine, cron scheduling (Phase 4)
 - **[telegram/](./telegram/)** - Telegram bot integration (Phase 1)
+- **[memory/](./memory/)** - Memory persistence, hybrid search, embeddings (Phase 2)
+- **[soul/](./soul/)** - Soul/Identity system, bootstrap files (Phase 3)
+- **[autonomy/](./autonomy/)** - Heartbeat engine, cron scheduling (Phase 4)
 - **[tools/](./tools/)** - Agent tools and tool registry
 - **[security/](./security/)** - Approval system, audit logging (Phase 5)
 - **[architecture/](./architecture/)** - Overall system architecture and design decisions
@@ -56,14 +81,29 @@ Documentation must be updated during development, not after:
 
 ## Module Status
 
-| Module | Phase | Status | Docs Complete |
-|--------|-------|--------|---------------|
-| Config | Phase 0 | ✅ Complete | ✅ Complete |
-| Telegram | Phase 1 | ⬜ Not Started | ⬜ Not Started |
-| Soul | Phase 2 | ⬜ Not Started | ⬜ Not Started |
-| Memory | Phase 3 | ⬜ Not Started | ⬜ Not Started |
-| Autonomy | Phase 4 | ⬜ Not Started | ⬜ Not Started |
-| Security | Phase 5 | ⬜ Not Started | ⬜ Not Started |
+| Module | Phase | Code Status | Docs Status |
+|--------|-------|-------------|-------------|
+| Config | Phase 0 | ✅ Implemented | ✅ Updated |
+| MCP Server | Phase 0 | ✅ Implemented | ⬜ Not started |
+| Tools Registry | Phase 0 | ✅ Implemented | ⬜ Not started |
+| Telegram | Phase 1 | ⬜ Not started | 🔄 Planned (README only) |
+| Memory | Phase 2 | ⬜ Not started | ⬜ Not started |
+| Soul | Phase 3 | ⬜ Not started | ⬜ Not started |
+| Autonomy | Phase 4 | ⬜ Not started | ⬜ Not started |
+| Security | Phase 5 | ⬜ Not started | ⬜ Not started |
+
+## Current Source Files
+
+```
+src/
+├── index.ts          # Main exports
+├── config.ts         # Configuration manager
+├── mcp-server.ts     # MCP server entry point
+├── cli/
+│   └── index.ts      # CLI commands
+└── tools/
+    └── index.ts      # Tool registry (config_get, config_set)
+```
 
 ## Quick Links
 

@@ -1,289 +1,335 @@
 #!/usr/bin/env node
+/**
+ * Mudpuppy CLI
+ *
+ * Command-line interface for managing Mudpuppy.
+ */
 
-import { ConfigManager } from '../config.js';
-import { SecretsManager } from '../secrets.js';
-import { TelegramBot } from '../telegram/index.js';
-import { ApprovalManager } from '../security/index.js';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { homedir } from 'os';
+import { ConfigManager, getMudpuppyHome, initWorkspace, isWorkspaceInitialized, resolvePath } from '../config.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const VERSION = '2.0.0';
 
-// Get version from package.json
-function getVersion(): string {
-  try {
-    const packagePath = join(__dirname, '../../package.json');
-    const pkg = JSON.parse(readFileSync(packagePath, 'utf-8'));
-    return pkg.version || '0.1.0';
-  } catch {
-    return '0.1.0';
-  }
-}
-
-function showHelp(): void {
+function printHelp(): void {
   console.log(`
-Mudpuppy v${getVersion()} 🐾
-Security-hardened autonomous AI agent extending Claude Code
+Mudpuppy v${VERSION} - MCP-first autonomous AI agent
 
-Usage:
-  mudpuppy [command] [options]
+Usage: mudpuppy <command> [options]
 
 Commands:
-  init                  Initialize agent workspace
-  start                 Start the Telegram bot
-  stop                  Stop the Telegram bot
-  status                Show bot status
-  config get            Show current configuration
-  config set <key> <value>  Set configuration value
+  init                    Initialize workspace at $MUDPUPPY_HOME
+  config get [path]       Get config value (or full config if no path)
+  config set <path> <val> Set config value
+  status                  Show system status
+  version                 Show version
 
-  Telegram Commands:
-  telegram set-token <token>  Set Telegram bot token
-  telegram enable             Enable Telegram integration
-  telegram disable            Disable Telegram integration
+Telegram (Phase 1):
+  telegram start          Start Telegram bot daemon
+  telegram stop           Stop Telegram bot daemon
+  telegram status         Show bot status
 
-  Future Commands (not yet implemented):
-  memory search <q>     Search memories
-  memory add <text>     Add memory entry
-  heartbeat pause       Pause heartbeat
-  heartbeat resume      Resume heartbeat
-  audit [--tail]        Show audit log
-
-Options:
-  --version, -v       Show version
-  --help, -h          Show this help
+Environment:
+  MUDPUPPY_HOME           Workspace directory (default: ~/.mudpuppy)
 
 Examples:
   mudpuppy init
-  mudpuppy telegram set-token 123456:ABC-DEF...
-  mudpuppy telegram enable
+  mudpuppy config get telegram.enabled
   mudpuppy config set telegram.enabled true
-  mudpuppy start
-  mudpuppy --version
 `);
 }
 
-async function main() {
-  const args = process.argv.slice(2);
+function printVersion(): void {
+  console.log(`Mudpuppy v${VERSION}`);
+  console.log(`Workspace: ${getMudpuppyHome()}`);
+  console.log(`Initialized: ${isWorkspaceInitialized() ? 'Yes' : 'No'}`);
+}
 
-  // Handle no arguments
-  if (args.length === 0) {
-    showHelp();
-    process.exit(0);
+async function cmdInit(): Promise<void> {
+  console.log(`Initializing Mudpuppy workspace...`);
+  console.log(`Location: ${getMudpuppyHome()}`);
+  console.log();
+
+  const { created, existed } = initWorkspace();
+
+  if (created.length > 0) {
+    console.log('Created directories:');
+    created.forEach((d) => console.log(`  + ${d}`));
   }
 
-  const command = args[0];
-
-  // Handle version flag
-  if (command === '--version' || command === '-v') {
-    console.log(`mudpuppy v${getVersion()} 🐾`);
-    process.exit(0);
+  if (existed.length > 0) {
+    console.log('Already existed:');
+    existed.forEach((d) => console.log(`  . ${d}`));
   }
 
-  // Handle help flag
-  if (command === '--help' || command === '-h') {
-    showHelp();
-    process.exit(0);
+  // Create default config if not exists
+  const config = new ConfigManager();
+  if (!isWorkspaceInitialized()) {
+    config.save();
+    console.log(`\nCreated config: ${config.getConfigPath()}`);
+  } else {
+    console.log(`\nConfig exists: ${config.getConfigPath()}`);
   }
 
+  // Create default workspace files if not exist
+  await createDefaultWorkspaceFiles();
+
+  console.log('\n✅ Workspace initialized!');
+  console.log('\nNext steps:');
+  console.log('  1. Configure Telegram: mudpuppy config set telegram.enabled true');
+  console.log('  2. Set bot token in ~/.mudpuppy/secrets.env');
+  console.log('  3. Start bot: mudpuppy telegram start');
+}
+
+async function createDefaultWorkspaceFiles(): Promise<void> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const files: Record<string, string> = {
+    'workspace/SOUL.md': `# Soul
+
+## Core Essence
+I am Mudpuppy, an AI companion that learns and evolves through our interactions.
+Like my namesake salamander, I never stop growing and adapting.
+
+## Communication Style
+- Direct and helpful
+- Curious and engaged
+- Respectful of boundaries
+
+## Boundaries
+- I ask before taking significant actions
+- I maintain user privacy
+- I acknowledge my limitations
+
+## Evolution
+*This section will grow as I learn about you and our interactions.*
+`,
+
+    'workspace/IDENTITY.md': `# Identity
+
+- **Name**: Mudpuppy
+- **Type**: AI Companion
+- **Vibe**: Curious, helpful, always learning
+- **Emoji**: 🐾
+`,
+
+    'workspace/AGENTS.md': `# Operating Instructions
+
+## Memory Protocol
+- Log significant events to daily memory files
+- Update MEMORY.md with important facts
+- Search memory before answering questions about past interactions
+
+## Safety Rules
+- Never execute commands without approval
+- Ask for clarification when uncertain
+- Respect user privacy and data boundaries
+
+## Autonomous Behavior
+- Check HEARTBEAT.md for pending tasks
+- Only act during active hours (if configured)
+- Always log actions to audit trail
+`,
+
+    'workspace/USER.md': `# User Profile
+
+*Add information about yourself here for better personalization.*
+
+## Preferences
+- (Your preferences)
+
+## Context
+- (Information about your work, projects, etc.)
+`,
+
+    'workspace/MEMORY.md': `# Long-term Memory
+
+*Curated facts and learnings that persist across sessions.*
+
+## Key Facts
+- Workspace initialized on ${new Date().toISOString().split('T')[0]}
+
+## Preferences
+- (Learned preferences will appear here)
+
+## Insights
+- (Patterns and learnings will appear here)
+`,
+
+    'workspace/HEARTBEAT.md': `# Heartbeat Tasks
+
+## Recurring
+- [ ] Check for important notifications
+
+## One-time
+- (Add tasks here)
+
+---
+HEARTBEAT_OK
+`,
+
+    'tools/manifest.md': `# Mudpuppy Tools
+
+## Config
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| config_get | Get configuration value | No |
+| config_set | Set configuration value | No |
+
+## Telegram (Phase 1)
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| telegram_poll | Get pending messages | No |
+| telegram_send | Send message | No |
+| telegram_pair | Approve pairing | Yes |
+| telegram_status | Get bot status | No |
+
+## Memory (Phase 2)
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| memory_search | Search memories | No |
+| memory_add | Add new memory | No |
+| memory_get | Get specific memory | No |
+| memory_stats | Get statistics | No |
+
+## Soul (Phase 3)
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| soul_read | Read soul/identity files | No |
+| soul_propose_update | Propose soul change | Yes |
+
+## Heartbeat (Phase 4)
+| Tool | Purpose | Requires Approval |
+|------|---------|-------------------|
+| heartbeat_status | Get heartbeat status | No |
+| heartbeat_pause | Pause heartbeat | No |
+| heartbeat_resume | Resume heartbeat | No |
+`,
+  };
+
+  for (const [relativePath, content] of Object.entries(files)) {
+    const fullPath = resolvePath(relativePath);
+    if (!fs.existsSync(fullPath)) {
+      const dir = path.dirname(fullPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(fullPath, content);
+      console.log(`  + ${relativePath}`);
+    }
+  }
+}
+
+function cmdConfigGet(path?: string): void {
   const config = new ConfigManager();
 
-  switch (command) {
-    case 'init': {
-      console.log('Initializing Mudpuppy workspace... 🐾');
-      config.ensureWorkspace();
-      config.save();
-      console.log(`✓ Workspace created at: ${config.get().workspace}`);
-      console.log('✓ Configuration saved');
-      console.log('\nNext steps:');
-      console.log('  1. Configure Telegram bot token (Phase 1)');
-      console.log('  2. Run: mudpuppy start');
-      break;
-    }
-
-    case 'config': {
-      const subcommand = args[1];
-
-      if (subcommand === 'get') {
-        console.log(JSON.stringify(config.get(), null, 2));
-      } else if (subcommand === 'set') {
-        const key = args[2];
-        const value = args[3];
-
-        if (!key || !value) {
-          console.error('Error: config set requires <key> and <value>');
-          process.exit(1);
-        }
-
-        // Parse value (handle booleans, numbers, JSON)
-        let parsedValue: any = value;
-        if (value === 'true') parsedValue = true;
-        else if (value === 'false') parsedValue = false;
-        else if (!isNaN(Number(value))) parsedValue = Number(value);
-        else if (value.startsWith('{') || value.startsWith('[')) {
-          try {
-            parsedValue = JSON.parse(value);
-          } catch {
-            // Keep as string if JSON parse fails
-          }
-        }
-
-        config.set(key, parsedValue);
-        config.save();
-        console.log(`✓ Set ${key} = ${parsedValue}`);
-      } else {
-        console.error('Error: Unknown config subcommand. Use "get" or "set"');
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'telegram': {
-      const subcommand = args[1];
-      const secrets = new SecretsManager();
-
-      if (subcommand === 'set-token') {
-        const token = args[2];
-        if (!token) {
-          console.error('Error: telegram set-token requires <token>');
-          process.exit(1);
-        }
-
-        secrets.set('TELEGRAM_BOT_TOKEN', token);
-        secrets.save();
-        console.log(`✓ Telegram bot token saved to ${secrets.getPath()}`);
-        console.log('  Next: mudpuppy telegram enable');
-      } else if (subcommand === 'enable') {
-        config.set('telegram.enabled', true);
-        config.save();
-        console.log('✓ Telegram integration enabled');
-        console.log('  Next: mudpuppy start');
-      } else if (subcommand === 'disable') {
-        config.set('telegram.enabled', false);
-        config.save();
-        console.log('✓ Telegram integration disabled');
-      } else {
-        console.error('Error: Unknown telegram subcommand. Use "set-token", "enable", or "disable"');
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'start': {
-      const secrets = new SecretsManager();
-      const approval = new ApprovalManager();
-
-      // Check if Telegram is enabled
-      if (!config.get().telegram.enabled) {
-        console.error('Error: Telegram is not enabled');
-        console.log('Run: mudpuppy telegram enable');
-        process.exit(1);
-      }
-
-      // Check if bot token exists
-      if (!secrets.has('TELEGRAM_BOT_TOKEN')) {
-        console.error('Error: Telegram bot token not set');
-        console.log('Run: mudpuppy telegram set-token <token>');
-        process.exit(1);
-      }
-
-      console.log('Starting Mudpuppy... 🐾\n');
-
-      // Create and start bot
-      const bot = new TelegramBot(config, secrets);
-
-      // Set up pairing handler
-      bot.setPairingHandler(async (userId, username) => {
-        const approved = await approval.requestApproval({
-          title: 'Telegram Pairing Request',
-          description: 'A user wants to pair with this agent',
-          details: {
-            'User ID': userId.toString(),
-            'Username': username ? `@${username}` : '(not set)',
-          },
-        });
-
-        return approved;
-      });
-
-      // Set up message handler (simple echo for now)
-      bot.setMessageHandler(async (userId, text) => {
-        console.log(`📨 Message from ${userId}: ${text}`);
-        // For now, just echo back
-        return `🤖 Echo: ${text}`;
-      });
-
-      // Start bot
-      try {
-        await bot.start();
-
-        console.log('\n✅ Bot is running. Press Ctrl+C to stop.\n');
-
-        // Handle graceful shutdown
-        process.on('SIGINT', async () => {
-          console.log('\n🛑 Shutting down...');
-          await bot.stop();
-          approval.close();
-          process.exit(0);
-        });
-
-        process.on('SIGTERM', async () => {
-          await bot.stop();
-          approval.close();
-          process.exit(0);
-        });
-
-        // Keep process alive
-        await new Promise(() => {});
-      } catch (error) {
-        console.error('Error starting bot:', error);
-        approval.close();
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'stop': {
-      console.log('To stop the bot, press Ctrl+C in the terminal where it is running');
-      break;
-    }
-
-    case 'status': {
-      const secrets = new SecretsManager();
-
-      console.log('\n📊 Mudpuppy Status 🐾\n');
-      console.log(`Version: ${getVersion()}`);
-      console.log(`Workspace: ${config.get().workspace}`);
-      console.log(`\nTelegram:`);
-      console.log(`  Enabled: ${config.get().telegram.enabled ? '✅' : '❌'}`);
-      console.log(`  Token set: ${secrets.has('TELEGRAM_BOT_TOKEN') ? '✅' : '❌'}`);
-      console.log(`  Paired users: ${config.get().telegram.pairedUsers.length}`);
-      console.log(`\nMemory:`);
-      console.log(`  Enabled: ${config.get().memory.enabled ? '✅' : '❌'} (Phase 3)`);
-      console.log(`\nHeartbeat:`);
-      console.log(`  Enabled: ${config.get().heartbeat.enabled ? '✅' : '❌'} (Phase 4)`);
-      console.log('');
-      break;
-    }
-
-    case 'memory':
-    case 'heartbeat':
-    case 'audit': {
-      console.log(`Command "${command}" not yet implemented (will be added in later phases)`);
-      break;
-    }
-
-    default: {
-      console.error(`Error: Unknown command "${command}"`);
-      console.log('Run "mudpuppy --help" for usage information');
+  if (path) {
+    const value = config.getValue(path);
+    if (value === undefined) {
+      console.error(`Config path not found: ${path}`);
       process.exit(1);
     }
+    console.log(JSON.stringify(value, null, 2));
+  } else {
+    console.log(JSON.stringify(config.get(), null, 2));
+  }
+}
+
+function cmdConfigSet(path: string, value: string): void {
+  const config = new ConfigManager();
+
+  // Parse value (try JSON first, then string)
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    // Handle special values
+    if (value === 'true') parsed = true;
+    else if (value === 'false') parsed = false;
+    else if (!isNaN(Number(value))) parsed = Number(value);
+    else parsed = value;
+  }
+
+  config.setValue(path, parsed);
+  config.save();
+
+  console.log(`Set ${path} = ${JSON.stringify(parsed)}`);
+}
+
+function cmdStatus(): void {
+  console.log(`Mudpuppy v${VERSION}`);
+  console.log();
+  console.log(`Workspace: ${getMudpuppyHome()}`);
+  console.log(`Initialized: ${isWorkspaceInitialized() ? 'Yes' : 'No'}`);
+
+  if (isWorkspaceInitialized()) {
+    const config = new ConfigManager();
+    const cfg = config.get();
+
+    console.log();
+    console.log('Configuration:');
+    console.log(`  Telegram: ${cfg.telegram.enabled ? 'Enabled' : 'Disabled'}`);
+    console.log(`  Memory: ${cfg.memory.embeddingProvider} embeddings`);
+    console.log(`  Heartbeat: ${cfg.heartbeat.enabled ? `${cfg.heartbeat.interval / 60000}min` : 'Disabled'}`);
+    console.log(`  Audit Log: ${cfg.security.auditLog ? 'Enabled' : 'Disabled'}`);
+  }
+}
+
+// Parse and execute command
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  const command = args[0];
+
+  switch (command) {
+    case 'init':
+      await cmdInit();
+      break;
+
+    case 'config':
+      const subCmd = args[1];
+      if (subCmd === 'get') {
+        cmdConfigGet(args[2]);
+      } else if (subCmd === 'set') {
+        if (!args[2] || args[3] === undefined) {
+          console.error('Usage: mudpuppy config set <path> <value>');
+          process.exit(1);
+        }
+        cmdConfigSet(args[2], args[3]);
+      } else {
+        console.error('Usage: mudpuppy config <get|set> ...');
+        process.exit(1);
+      }
+      break;
+
+    case 'status':
+      cmdStatus();
+      break;
+
+    case 'version':
+    case '--version':
+    case '-v':
+      printVersion();
+      break;
+
+    case 'help':
+    case '--help':
+    case '-h':
+    case undefined:
+      printHelp();
+      break;
+
+    case 'telegram':
+      console.log('Telegram commands will be implemented in Phase 1.');
+      console.log('See PRD.md for details.');
+      break;
+
+    default:
+      console.error(`Unknown command: ${command}`);
+      console.error('Run "mudpuppy help" for usage.');
+      process.exit(1);
   }
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  console.error('Error:', error.message);
   process.exit(1);
 });

@@ -1,11 +1,24 @@
 /**
- * Mudpuppy 🐾 - Security-hardened autonomous AI agent
+ * Mudpuppy v2 - MCP-first autonomous AI agent
  *
- * Main entry point for programmatic use.
- * For CLI usage, use: mudpuppy command
+ * Main exports for programmatic usage.
  */
 
-export { ConfigManager } from './config.js';
-export type { Config } from './config.js';
+export {
+  ConfigManager,
+  getMudpuppyHome,
+  resolvePath,
+  initWorkspace,
+  isWorkspaceInitialized,
+  type MudpuppyConfig,
+} from './config.js';
 
-export const version = '0.1.0';
+export {
+  registerTool,
+  getTool,
+  getAllTools,
+  getToolsByCategory,
+  executeTool,
+  TOOL_CATEGORIES,
+  type ToolDefinition,
+} from './tools/index.js';

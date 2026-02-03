@@ -1,139 +1,239 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+/**
+ * Mudpuppy Configuration Manager
+ *
+ * Handles configuration loading/saving with portable path resolution.
+ * All paths use $MUDPUPPY_HOME or default to ~/.mudpuppy
+ */
+
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-export interface Config {
+// Get MUDPUPPY_HOME from environment or default to ~/.mudpuppy
+export function getMudpuppyHome(): string {
+  return process.env.MUDPUPPY_HOME || join(homedir(), '.mudpuppy');
+}
+
+// Resolve a path relative to MUDPUPPY_HOME
+export function resolvePath(relativePath: string): string {
+  return join(getMudpuppyHome(), relativePath);
+}
+
+// Default configuration
+export interface MudpuppyConfig {
   version: string;
-  workspace: string;
-  heartbeat: {
-    enabled: boolean;
-    interval: number; // milliseconds
-    activeHours?: {
-      start: string; // "09:00"
-      end: string; // "23:00"
-      timezone: string; // "America/Los_Angeles"
-    };
-    requireApproval: boolean;
-    maxActionsPerBeat: number;
-  };
   telegram: {
     enabled: boolean;
-    botToken?: string;
-    pairedUsers: number[];
-    enableGroups: boolean;
-    notifyHeartbeat: boolean;
+    allowGroups: boolean;
   };
   memory: {
+    embeddingProvider: 'local' | 'openai' | 'none';
+    embeddingModel: string;
+    hybridWeights: {
+      vector: number;
+      keyword: number;
+    };
+    autoIndex: boolean;
+    indexInterval: number;
+  };
+  heartbeat: {
     enabled: boolean;
-    embeddingProvider: 'openai' | 'local';
-    searchMode: 'hybrid' | 'vector' | 'keyword';
+    interval: number;
+    activeHours?: {
+      start: string;
+      end: string;
+      timezone: string;
+    };
+    maxActionsPerBeat: number;
+    requireApproval: boolean;
   };
   security: {
-    approvalRequired: boolean;
+    approvalRequired: string[];
     auditLog: boolean;
-    sandboxMode: 'off' | 'non-main' | 'all';
+    maxMessageLength: number;
   };
 }
 
-const DEFAULT_CONFIG: Config = {
-  version: '0.1.0',
-  workspace: join(homedir(), '.mudpuppy'),
+const DEFAULT_CONFIG: MudpuppyConfig = {
+  version: '2.0.0',
+  telegram: {
+    enabled: false,
+    allowGroups: false,
+  },
+  memory: {
+    embeddingProvider: 'local',
+    embeddingModel: 'Xenova/all-MiniLM-L6-v2',
+    hybridWeights: {
+      vector: 0.7,
+      keyword: 0.3,
+    },
+    autoIndex: true,
+    indexInterval: 5000,
+  },
   heartbeat: {
     enabled: false,
     interval: 1800000, // 30 minutes
+    maxActionsPerBeat: 5,
     requireApproval: true,
-    maxActionsPerBeat: 10,
-  },
-  telegram: {
-    enabled: false,
-    pairedUsers: [],
-    enableGroups: false,
-    notifyHeartbeat: true,
-  },
-  memory: {
-    enabled: false,
-    embeddingProvider: 'local',
-    searchMode: 'hybrid',
   },
   security: {
-    approvalRequired: true,
+    approvalRequired: ['soul_propose_update', 'telegram_pair'],
     auditLog: true,
-    sandboxMode: 'off',
+    maxMessageLength: 4096,
   },
 };
 
 export class ConfigManager {
-  private config: Config;
+  private config: MudpuppyConfig;
   private configPath: string;
 
   constructor() {
-    this.configPath = join(homedir(), '.mudpuppy', 'config.json');
+    this.configPath = resolvePath('config.json');
     this.config = this.load();
   }
 
-  private load(): Config {
-    if (!existsSync(this.configPath)) {
-      return DEFAULT_CONFIG;
+  /**
+   * Load configuration from file or create default
+   */
+  private load(): MudpuppyConfig {
+    if (existsSync(this.configPath)) {
+      try {
+        const content = readFileSync(this.configPath, 'utf-8');
+        const loaded = JSON.parse(content);
+        // Merge with defaults to ensure all fields exist
+        return this.mergeWithDefaults(loaded);
+      } catch (error) {
+        console.error(`Error loading config: ${error}`);
+        return { ...DEFAULT_CONFIG };
+      }
     }
-
-    try {
-      const data = readFileSync(this.configPath, 'utf-8');
-      const loaded = JSON.parse(data);
-      // Merge with defaults to handle missing fields
-      return { ...DEFAULT_CONFIG, ...loaded };
-    } catch (error) {
-      console.warn(`Failed to load config from ${this.configPath}, using defaults:`, error);
-      return DEFAULT_CONFIG;
-    }
+    return { ...DEFAULT_CONFIG };
   }
 
-  public save(): void {
-    const dir = join(homedir(), '.openclaw-clone');
+  /**
+   * Merge loaded config with defaults (handles missing fields)
+   */
+  private mergeWithDefaults(loaded: Partial<MudpuppyConfig>): MudpuppyConfig {
+    return {
+      ...DEFAULT_CONFIG,
+      ...loaded,
+      telegram: { ...DEFAULT_CONFIG.telegram, ...loaded.telegram },
+      memory: {
+        ...DEFAULT_CONFIG.memory,
+        ...loaded.memory,
+        hybridWeights: {
+          ...DEFAULT_CONFIG.memory.hybridWeights,
+          ...loaded.memory?.hybridWeights,
+        },
+      },
+      heartbeat: { ...DEFAULT_CONFIG.heartbeat, ...loaded.heartbeat },
+      security: { ...DEFAULT_CONFIG.security, ...loaded.security },
+    };
+  }
+
+  /**
+   * Save configuration to file
+   */
+  save(): void {
+    const dir = getMudpuppyHome();
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
-
-    try {
-      writeFileSync(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
-    } catch (error) {
-      throw new Error(`Failed to save config to ${this.configPath}: ${error}`);
-    }
+    writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
   }
 
-  public get(): Config {
+  /**
+   * Get the full configuration
+   */
+  get(): MudpuppyConfig {
     return this.config;
   }
 
-  public set(key: string, value: any): void {
-    const keys = key.split('.');
+  /**
+   * Get a specific config value by dot-notation path
+   */
+  getValue<T>(path: string): T | undefined {
+    const parts = path.split('.');
+    let current: unknown = this.config;
+
+    for (const part of parts) {
+      if (current === null || current === undefined) return undefined;
+      current = (current as Record<string, unknown>)[part];
+    }
+
+    return current as T;
+  }
+
+  /**
+   * Set a specific config value by dot-notation path
+   */
+  setValue(path: string, value: unknown): void {
+    const parts = path.split('.');
+    const lastPart = parts.pop();
+    if (!lastPart) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: any = this.config;
 
-    for (let i = 0; i < keys.length - 1; i++) {
-      if (!(keys[i] in current)) {
-        current[keys[i]] = {};
+    for (const part of parts) {
+      if (!(part in current)) {
+        current[part] = {};
       }
-      current = current[keys[i]];
+      current = current[part];
     }
 
-    current[keys[keys.length - 1]] = value;
+    current[lastPart] = value;
   }
 
-  public getWorkspacePath(...paths: string[]): string {
-    return join(this.config.workspace, ...paths);
+  /**
+   * Reset to default configuration
+   */
+  reset(): void {
+    this.config = { ...DEFAULT_CONFIG };
   }
 
-  public ensureWorkspace(): void {
-    if (!existsSync(this.config.workspace)) {
-      mkdirSync(this.config.workspace, { recursive: true });
+  /**
+   * Get the config file path
+   */
+  getConfigPath(): string {
+    return this.configPath;
+  }
+}
+
+/**
+ * Initialize workspace directory structure
+ */
+export function initWorkspace(): { created: string[]; existed: string[] } {
+  const home = getMudpuppyHome();
+  const dirs = [
+    '',                    // root
+    'workspace',           // soul/identity files
+    'workspace/memory',    // daily logs
+    'data',                // database, sessions
+    'data/sessions',       // session transcripts
+    'bot',                 // telegram bot daemon
+    'tools',               // tool documentation
+  ];
+
+  const created: string[] = [];
+  const existed: string[] = [];
+
+  for (const dir of dirs) {
+    const path = join(home, dir);
+    if (!existsSync(path)) {
+      mkdirSync(path, { recursive: true });
+      created.push(path);
+    } else {
+      existed.push(path);
     }
-
-    // Create standard directories
-    const dirs = ['memory', 'agents/default/sessions'];
-    for (const dir of dirs) {
-      const path = this.getWorkspacePath(dir);
-      if (!existsSync(path)) {
-        mkdirSync(path, { recursive: true });
-      }
-    }
   }
+
+  return { created, existed };
+}
+
+/**
+ * Check if workspace is initialized
+ */
+export function isWorkspaceInitialized(): boolean {
+  return existsSync(resolvePath('config.json'));
 }
