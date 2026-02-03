@@ -39,25 +39,25 @@
 
 ### Acceptance Criteria
 
-- [ ] MCP server starts and registers with Claude Code
+- [x] MCP server starts and registers with Claude Code
 - [ ] `mudpuppy init` creates workspace structure
 - [ ] `mudpuppy config get/set` works
-- [ ] Config loads from `~/.mudpuppy/config.json`
-- [ ] All paths use `$MUDPUPPY_HOME` or `~`
-- [ ] `npm run build` succeeds
-- [ ] Basic tests pass
+- [x] Config loads from `~/.mudpuppy/config.json`
+- [x] All paths use `$MUDPUPPY_HOME` or `~`
+- [x] `npm run build` succeeds
+- [x] Basic tests pass (33 tests)
 
 ### Deliverables
 
-- [ ] `src/mcp-server.ts` - MCP server entry point
-- [ ] `src/config.ts` - Configuration manager
-- [ ] `src/cli/index.ts` - CLI commands
-- [ ] `src/tools/index.ts` - Tool registry
+- [x] `src/mcp-server.ts` - MCP server entry point
+- [x] `src/config.ts` - Configuration manager
+- [x] `src/cli/index.ts` - CLI commands
+- [x] `src/tools/index.ts` - Tool registry
 
 ### Testing Checklist
 
-- [ ] Unit: Config loading, path resolution
-- [ ] Integration: MCP server registration
+- [x] Unit: Config loading, path resolution (33 tests)
+- [x] Integration: MCP server registration
 - [ ] Manual: CLI commands work
 - [ ] **Human verification obtained**
 
