@@ -22,3 +22,7 @@ export {
   TOOL_CATEGORIES,
   type ToolDefinition,
 } from './tools/index.js';
+
+export { SecretsManager, getSecret, setSecret, type SecretKey } from './secrets.js';
+
+export * from './telegram/index.js';

@@ -116,3 +116,18 @@ export const TOOL_CATEGORIES = {
   soul: ['soul_read', 'soul_propose_update'],
   heartbeat: ['heartbeat_status', 'heartbeat_pause', 'heartbeat_resume'],
 } as const;
+
+/**
+ * Initialize all tools. Call this once before using tools.
+ * This registers tools from all modules.
+ */
+export async function initTools(): Promise<void> {
+  // Dynamically import tool modules to register them
+  await import('./telegram.js');
+}
+
+// Auto-initialize when module is loaded (for MCP server)
+// This is safe because it happens after all exports are defined
+const _init = initTools().catch((err) => {
+  console.error('Failed to initialize tools:', err);
+});

@@ -14,7 +14,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { getAllTools, executeTool } from './tools/index.js';
+import { getAllTools, executeTool, initTools } from './tools/index.js';
 import { getMudpuppyHome, isWorkspaceInitialized } from './config.js';
 
 // Create MCP server
@@ -84,6 +84,9 @@ async function main() {
     console.error(`Workspace: ${getMudpuppyHome()}`);
     // Continue anyway - tools can still work
   }
+
+  // Initialize all tools before starting server
+  await initTools();
 
   // Start server with stdio transport
   const transport = new StdioServerTransport();

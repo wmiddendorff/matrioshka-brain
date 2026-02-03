@@ -6,6 +6,15 @@
  */
 
 import { ConfigManager, getMudpuppyHome, initWorkspace, isWorkspaceInitialized, resolvePath } from '../config.js';
+import { SecretsManager } from '../secrets.js';
+import {
+  startDaemon,
+  stopDaemon,
+  restartDaemon,
+  isDaemonRunning,
+  getDaemonInfo,
+  checkConnection,
+} from '../telegram/index.js';
 
 const VERSION = '2.0.0';
 
@@ -22,10 +31,12 @@ Commands:
   status                  Show system status
   version                 Show version
 
-Telegram (Phase 1):
+Telegram:
   telegram start          Start Telegram bot daemon
   telegram stop           Stop Telegram bot daemon
+  telegram restart        Restart Telegram bot daemon
   telegram status         Show bot status
+  telegram set-token      Set bot token (will prompt)
 
 Environment:
   MUDPUPPY_HOME           Workspace directory (default: ~/.mudpuppy)
@@ -34,6 +45,8 @@ Examples:
   mudpuppy init
   mudpuppy config get telegram.enabled
   mudpuppy config set telegram.enabled true
+  mudpuppy telegram set-token <token>
+  mudpuppy telegram start
 `);
 }
 
@@ -274,6 +287,180 @@ function cmdStatus(): void {
   }
 }
 
+// ============================================
+// Telegram Commands
+// ============================================
+
+async function cmdTelegram(args: string[]): Promise<void> {
+  const subCmd = args[0];
+
+  switch (subCmd) {
+    case 'start':
+      await cmdTelegramStart();
+      break;
+
+    case 'stop':
+      cmdTelegramStop();
+      break;
+
+    case 'restart':
+      await cmdTelegramRestart();
+      break;
+
+    case 'status':
+      await cmdTelegramStatus();
+      break;
+
+    case 'set-token':
+      cmdTelegramSetToken(args[1]);
+      break;
+
+    default:
+      console.error(`Unknown telegram command: ${subCmd}`);
+      console.error('Available commands: start, stop, restart, status, set-token');
+      process.exit(1);
+  }
+}
+
+async function cmdTelegramStart(): Promise<void> {
+  // Check if already running
+  if (isDaemonRunning()) {
+    console.log('Telegram bot daemon is already running');
+    const info = getDaemonInfo();
+    console.log(`PID: ${info.pid}`);
+    return;
+  }
+
+  // Check for bot token
+  const secrets = new SecretsManager();
+  if (!secrets.has('TELEGRAM_BOT_TOKEN')) {
+    console.error('TELEGRAM_BOT_TOKEN not set');
+    console.error('Set it with: mudpuppy telegram set-token <token>');
+    process.exit(1);
+  }
+
+  console.log('Starting Telegram bot daemon...');
+
+  try {
+    const pid = await startDaemon();
+    console.log(`Daemon started with PID ${pid}`);
+    console.log();
+
+    // Wait a moment and check status
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const connection = await checkConnection();
+
+    if (connection.reachable && connection.status) {
+      console.log(`Bot: @${connection.status.botUsername}`);
+      console.log(`Paired users: ${connection.status.pairedUsers}`);
+      console.log(`Pending requests: ${connection.status.pendingRequests}`);
+    }
+  } catch (error) {
+    console.error('Failed to start daemon:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+}
+
+function cmdTelegramStop(): void {
+  if (!isDaemonRunning()) {
+    console.log('Telegram bot daemon is not running');
+    return;
+  }
+
+  console.log('Stopping Telegram bot daemon...');
+  const stopped = stopDaemon();
+
+  if (stopped) {
+    console.log('Daemon stopped');
+  } else {
+    console.log('Daemon was not running');
+  }
+}
+
+async function cmdTelegramRestart(): Promise<void> {
+  console.log('Restarting Telegram bot daemon...');
+
+  try {
+    const pid = await restartDaemon();
+    console.log(`Daemon restarted with PID ${pid}`);
+  } catch (error) {
+    console.error('Failed to restart daemon:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+}
+
+async function cmdTelegramStatus(): Promise<void> {
+  const info = getDaemonInfo();
+
+  if (!info.running) {
+    console.log('Telegram bot daemon: Not running');
+    console.log();
+    console.log('Start with: mudpuppy telegram start');
+    return;
+  }
+
+  console.log(`Telegram bot daemon: Running (PID ${info.pid})`);
+
+  // Try to get detailed status
+  try {
+    const connection = await checkConnection();
+
+    if (!connection.reachable) {
+      console.log(`Status: Unreachable (${connection.error})`);
+      return;
+    }
+
+    const status = connection.status!;
+    console.log();
+    console.log(`Bot: @${status.botUsername} (${status.botName})`);
+    console.log(`Started: ${new Date(status.startedAt!).toLocaleString()}`);
+    console.log();
+    console.log(`Paired users: ${status.pairedUsers}`);
+    console.log(`Pending requests: ${status.pendingRequests}`);
+    console.log(`Unread messages: ${status.unreadMessages}`);
+
+    if (status.lastError) {
+      console.log();
+      console.log(`Last error: ${status.lastError}`);
+    }
+  } catch (error) {
+    console.log(`Status: Error communicating with daemon`);
+    console.log(`  ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+function cmdTelegramSetToken(token?: string): void {
+  if (!token) {
+    console.error('Usage: mudpuppy telegram set-token <token>');
+    console.error();
+    console.error('Get a token from @BotFather on Telegram');
+    process.exit(1);
+  }
+
+  // Basic validation
+  if (!token.includes(':')) {
+    console.error('Invalid token format. Telegram bot tokens contain a colon (:)');
+    console.error('Example: 123456789:ABCdefGHIjklMNOpqrSTUvwxYZ');
+    process.exit(1);
+  }
+
+  const secrets = new SecretsManager();
+  secrets.set('TELEGRAM_BOT_TOKEN', token);
+  secrets.save();
+
+  console.log(`Token saved to ${secrets.getSecretsPath()}`);
+  console.log();
+
+  // Restart daemon if running
+  if (isDaemonRunning()) {
+    console.log('Daemon is running. Restart it to use the new token:');
+    console.log('  mudpuppy telegram restart');
+  } else {
+    console.log('Start the bot with:');
+    console.log('  mudpuppy telegram start');
+  }
+}
+
 // Parse and execute command
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -318,8 +505,7 @@ async function main(): Promise<void> {
       break;
 
     case 'telegram':
-      console.log('Telegram commands will be implemented in Phase 1.');
-      console.log('See PRD.md for details.');
+      await cmdTelegram(args.slice(1));
       break;
 
     default:
