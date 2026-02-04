@@ -55,7 +55,7 @@ describe('Soul Templates', () => {
     const { getDefaultTemplate } = await import('../src/soul/templates.js');
     const template = getDefaultTemplate('identity');
     expect(template).toContain('# Identity');
-    expect(template).toContain('Matrioshka Brain');
+    expect(template).toContain('AI Companion');
   });
 
   it('agents template contains safety rules', async () => {
