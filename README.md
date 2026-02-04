@@ -1,5 +1,7 @@
 # Matrioshka Brain v2.0.0
 
+[![CI](https://github.com/wmiddendorff/matrioshka-brain/actions/workflows/ci.yml/badge.svg)](https://github.com/wmiddendorff/matrioshka-brain/actions/workflows/ci.yml)
+
 Security-hardened autonomous AI agent extending Claude Code with persistent memory, evolving personality, Telegram integration, and controlled autonomous execution.
 
 Named after the matrioshka brain megastructure from Charles Stross's *Accelerando* — nested layers of computation that grow ever more capable.
