@@ -101,9 +101,17 @@ async function cmdInit(): Promise<void> {
 
   console.log('\n✅ Workspace initialized!');
   console.log('\nNext steps:');
-  console.log('  1. Configure Telegram: mudpuppy config set telegram.enabled true');
-  console.log('  2. Set bot token in ~/.mudpuppy/secrets.env');
-  console.log('  3. Start bot: mudpuppy telegram start');
+  console.log('  1. Set up Telegram (optional):');
+  console.log('     mudpuppy config set telegram.enabled true');
+  console.log('     mudpuppy telegram set-token <token-from-BotFather>');
+  console.log('     mudpuppy telegram start');
+  console.log('  2. Enable autonomous heartbeat:');
+  console.log('     mudpuppy config set heartbeat.enabled true');
+  console.log('  3. Start a conversation with the agent in Claude Code');
+  console.log('     The agent will introduce itself and learn about you.');
+  console.log('  4. After setup, the agent remembers you across sessions');
+  console.log('     and works autonomously as a collaborator.');
+  console.log('\nSee docs/SETUP.md for the complete guide.');
 }
 
 async function createDefaultWorkspaceFiles(): Promise<void> {
@@ -121,25 +129,32 @@ async function createDefaultWorkspaceFiles(): Promise<void> {
   // Non-soul workspace files
   files['workspace/MEMORY.md'] = `# Long-term Memory
 
-*Curated facts and learnings that persist across sessions.*
+*Curated knowledge that persists across sessions. Updated automatically by the agent.*
 
 ## Key Facts
 - Workspace initialized on ${new Date().toISOString().split('T')[0]}
 
+## User
+*(Populated as the agent learns about you)*
+
 ## Preferences
-- (Learned preferences will appear here)
+*(Discovered through conversation)*
 
 ## Insights
-- (Patterns and learnings will appear here)
+*(Patterns and learnings accumulated over time)*
 `;
 
   files['workspace/HEARTBEAT.md'] = `# Heartbeat Tasks
 
+*Tasks here are executed automatically on each heartbeat tick.*
+*Use @tool_name prefix to make a task executable.*
+
 ## Recurring
-- [ ] Check for important notifications
+- [ ] @telegram_poll Check for new Telegram messages
+- [ ] @memory_search {query: "pending tasks"} Review pending tasks
 
 ## One-time
-- (Add tasks here)
+- (Add tasks here as needed)
 
 ---
 HEARTBEAT_OK

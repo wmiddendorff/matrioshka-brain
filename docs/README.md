@@ -155,6 +155,7 @@ setup.sh                  # Portable setup script
 
 ## Quick Links
 
+- **[Setup Guide](./SETUP.md)** - Complete installation and first-run guide
 - [Main README](../README.md)
 - [PRD](../PRD.md)
 - [PROGRESS](../PROGRESS.md)
