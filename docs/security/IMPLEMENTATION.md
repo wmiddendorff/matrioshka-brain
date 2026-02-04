@@ -11,14 +11,14 @@ Agent calls soul_propose_update
   ├── Creates approval in SQLite (status: pending)
   └── Returns proposal ID + diff to agent
 
-User runs `mudpuppy soul show <id>`
+User runs `matrioshka-brain soul show <id>`
   └── Displays diff for review
 
-User runs `mudpuppy soul approve <id>`
+User runs `matrioshka-brain soul approve <id>`
   ├── Updates approval status to 'approved'
   └── Writes new content to soul file
 
-User runs `mudpuppy soul deny <id>`
+User runs `matrioshka-brain soul deny <id>`
   └── Updates approval status to 'denied' (no file change)
 ```
 
@@ -74,15 +74,15 @@ Scheduler tick fires
 
 | Type | Source | Payload | How Approved |
 |------|--------|---------|--------------|
-| `soul_update` | `soul_propose_update` tool | `{file, diff, newContent, reason}` | `mudpuppy soul approve` |
+| `soul_update` | `soul_propose_update` tool | `{file, diff, newContent, reason}` | `matrioshka-brain soul approve` |
 | `telegram_pair` | User sends `/start` | `{userId, username}` | `telegram_pair {action: "approve"}` |
-| `heartbeat_action` | Scheduler tick | `{tool, input, task}` | `mudpuppy soul approve` |
+| `heartbeat_action` | Scheduler tick | `{tool, input, task}` | `matrioshka-brain soul approve` |
 
 All approvals share the same database table and lifecycle (pending → approved/denied/expired).
 
 ## Audit JSONL Format
 
-Each line in `~/.mudpuppy/data/audit.log` is a self-contained JSON object:
+Each line in `~/.matrioshka-brain/data/audit.log` is a self-contained JSON object:
 
 ```json
 {
@@ -117,7 +117,7 @@ Each line in `~/.mudpuppy/data/audit.log` is a self-contained JSON object:
 
 ### Storage
 
-Secrets live in `~/.mudpuppy/secrets.env`:
+Secrets live in `~/.matrioshka-brain/secrets.env`:
 
 ```
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
@@ -219,7 +219,7 @@ This enables:
 ### File Indexer Boundaries
 
 The file auto-indexer (`src/memory/indexer.ts`):
-- Only indexes files in `~/.mudpuppy/workspace/`
+- Only indexes files in `~/.matrioshka-brain/workspace/`
 - Skips `.env`, `secrets.env`, and dotfiles
 - Uses content hash to avoid re-indexing unchanged files
 - Entries tagged with `source: 'file-index'` (excluded from daily log to prevent feedback loops)

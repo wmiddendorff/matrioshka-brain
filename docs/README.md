@@ -1,10 +1,10 @@
-# Mudpuppy Documentation
+# Matrioshka Brain Documentation
 
-This directory contains comprehensive documentation for all modules and systems in Mudpuppy.
+This directory contains comprehensive documentation for all modules and systems in Matrioshka Brain.
 
 ## Architecture
 
-Mudpuppy v2 uses an **MCP-first architecture**:
+Matrioshka Brain v2 uses an **MCP-first architecture**:
 - All capabilities exposed as MCP tools
 - Claude Code connects via MCP protocol
 - Optional skill layer for persona/workflow
@@ -22,7 +22,7 @@ Mudpuppy v2 uses an **MCP-first architecture**:
          │
          ▼
 ┌─────────────────┐
-│   ~/.mudpuppy   │
+│   ~/.matrioshka-brain   │
 │   (workspace)   │
 └─────────────────┘
 ```
@@ -146,7 +146,7 @@ src/
 
 ```
 skills/
-└── mudpuppy/
+└── matrioshka-brain/
     └── SKILL.md          # Claude Code skill (persona + workflows)
 
 setup.sh                  # Portable setup script

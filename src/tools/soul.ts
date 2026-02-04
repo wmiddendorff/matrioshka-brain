@@ -100,7 +100,7 @@ registerTool({
         proposalId: approval.id,
         diff,
         status: 'pending',
-        message: `Proposal created. Use "mudpuppy soul list" to view, "mudpuppy soul approve ${approval.id}" to apply.`,
+        message: `Proposal created. Use "matrioshka-brain soul list" to view, "matrioshka-brain soul approve ${approval.id}" to apply.`,
       };
     } catch (error) {
       return {

@@ -1,4 +1,4 @@
-# Mudpuppy Setup Guide
+# Matrioshka Brain Setup Guide
 
 Complete guide from clone to fully autonomous AI agent.
 
@@ -20,15 +20,15 @@ Complete guide from clone to fully autonomous AI agent.
 ### 1. Clone and Set Up
 
 ```bash
-git clone <repository-url> mudpuppy
-cd mudpuppy
+git clone <repository-url> matrioshka-brain
+cd matrioshka-brain
 ./setup.sh
 ```
 
 The setup script handles everything:
 - Installs Node.js dependencies
 - Builds the TypeScript project
-- Initializes the workspace at `~/.mudpuppy/`
+- Initializes the workspace at `~/.matrioshka-brain/`
 - Generates `.mcp.json` for Claude Code integration
 
 ### 2. Configure Telegram (Optional)
@@ -93,14 +93,14 @@ You should see:
 
 This is where the agent comes alive.
 
-### Open Claude Code in the Mudpuppy project directory:
+### Open Claude Code in the Matrioshka Brain project directory:
 
 ```bash
-cd mudpuppy
+cd matrioshka-brain
 claude
 ```
 
-Claude Code detects `.mcp.json` and automatically starts the MCP server, making all 16 Mudpuppy tools available.
+Claude Code detects `.mcp.json` and automatically starts the MCP server, making all 16 Matrioshka Brain tools available.
 
 ### What Happens Automatically
 
@@ -158,7 +158,7 @@ Claude Code
 ### Workspace Structure
 
 ```
-~/.mudpuppy/
+~/.matrioshka-brain/
     config.json             # Global configuration
     secrets.env             # API keys and tokens (gitignored)
     workspace/
@@ -181,7 +181,7 @@ Claude Code
 
 ## Configuration Reference
 
-All configuration is in `~/.mudpuppy/config.json`. Use the CLI to modify:
+All configuration is in `~/.matrioshka-brain/config.json`. Use the CLI to modify:
 
 ```bash
 node dist/cli/index.js config get              # Show full config
@@ -207,32 +207,32 @@ node dist/cli/index.js config set <path> <val>  # Set value
 
 ```bash
 # General
-mudpuppy init               # Initialize workspace
-mudpuppy status             # Show system status
-mudpuppy version            # Show version
+matrioshka-brain init               # Initialize workspace
+matrioshka-brain status             # Show system status
+matrioshka-brain version            # Show version
 
 # Config
-mudpuppy config get [path]          # Read config
-mudpuppy config set <path> <value>  # Update config
+matrioshka-brain config get [path]          # Read config
+matrioshka-brain config set <path> <value>  # Update config
 
 # Telegram
-mudpuppy telegram start             # Start bot daemon
-mudpuppy telegram stop              # Stop bot daemon
-mudpuppy telegram restart           # Restart bot daemon
-mudpuppy telegram status            # Show bot status
-mudpuppy telegram set-token <tok>   # Set bot token
+matrioshka-brain telegram start             # Start bot daemon
+matrioshka-brain telegram stop              # Stop bot daemon
+matrioshka-brain telegram restart           # Restart bot daemon
+matrioshka-brain telegram status            # Show bot status
+matrioshka-brain telegram set-token <tok>   # Set bot token
 
 # Soul Management
-mudpuppy soul list                  # List pending proposals
-mudpuppy soul show <id>             # Show proposal diff
-mudpuppy soul approve <id>          # Apply proposal
-mudpuppy soul deny <id>             # Reject proposal
+matrioshka-brain soul list                  # List pending proposals
+matrioshka-brain soul show <id>             # Show proposal diff
+matrioshka-brain soul approve <id>          # Apply proposal
+matrioshka-brain soul deny <id>             # Reject proposal
 
 # Heartbeat
-mudpuppy heartbeat status           # Show scheduler state
+matrioshka-brain heartbeat status           # Show scheduler state
 ```
 
-**Note:** Replace `mudpuppy` with `node dist/cli/index.js` if you haven't set up a global alias.
+**Note:** Replace `matrioshka-brain` with `node dist/cli/index.js` if you haven't set up a global alias.
 
 ## Troubleshooting
 
@@ -242,31 +242,31 @@ mudpuppy heartbeat status           # Show scheduler state
 - Check that `dist/mcp-server.js` exists
 
 ### Agent doesn't remember things
-- Verify memory database exists: `ls ~/.mudpuppy/data/memory.db`
+- Verify memory database exists: `ls ~/.matrioshka-brain/data/memory.db`
 - Check memory stats via MCP tool: `memory_stats`
 - Ensure `CLAUDE.md` has the "Agent Behavior Protocol" section
 
 ### Telegram bot not responding
-- Check daemon status: `mudpuppy telegram status`
-- Verify token: ensure `TELEGRAM_BOT_TOKEN` is in `~/.mudpuppy/secrets.env`
-- Check that the user is paired: `mudpuppy soul list`
+- Check daemon status: `matrioshka-brain telegram status`
+- Verify token: ensure `TELEGRAM_BOT_TOKEN` is in `~/.matrioshka-brain/secrets.env`
+- Check that the user is paired: `matrioshka-brain soul list`
 
 ### Heartbeat not firing
-- Verify enabled: `mudpuppy config get heartbeat.enabled`
+- Verify enabled: `matrioshka-brain config get heartbeat.enabled`
 - Check active hours: heartbeat skips ticks outside the configured window
 - Check HEARTBEAT.md has `@tool_name` prefixed tasks
 - The heartbeat runs inside the MCP server process — Claude Code must be open
 
 ### Soul proposals not appearing
-- List pending: `mudpuppy soul list`
+- List pending: `matrioshka-brain soul list`
 - Proposals expire after 24 hours by default
-- Check `~/.mudpuppy/data/approvals.db` exists
+- Check `~/.matrioshka-brain/data/approvals.db` exists
 
 ## Security Notes
 
 - **Approval-first**: Soul updates, Telegram pairing, and heartbeat actions all require explicit user approval by default
-- **Audit trail**: All autonomous actions are logged to `~/.mudpuppy/data/audit.log`
-- **Secrets isolation**: Tokens and keys are stored in `~/.mudpuppy/secrets.env`, never in code or git
+- **Audit trail**: All autonomous actions are logged to `~/.matrioshka-brain/data/audit.log`
+- **Secrets isolation**: Tokens and keys are stored in `~/.matrioshka-brain/secrets.env`, never in code or git
 - **Active hours**: Prevents the agent from acting autonomously at inconvenient times
 - **No auto-approve**: The agent cannot approve its own proposals or pair Telegram users without human consent
 
@@ -276,7 +276,7 @@ To start fresh with a blank agent:
 
 ```bash
 # Remove workspace (keeps the project code)
-rm -rf ~/.mudpuppy
+rm -rf ~/.matrioshka-brain
 
 # Re-initialize
 ./setup.sh

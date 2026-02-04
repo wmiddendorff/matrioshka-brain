@@ -83,7 +83,7 @@ All tests are in `tests/autonomy.test.ts`.
 ## Test Isolation
 
 - Each test uses a fresh temp directory (`mkdtempSync`)
-- `MUDPUPPY_HOME` environment variable overridden per test
+- `MATRIOSHKA_BRAIN_HOME` environment variable overridden per test
 - Temp directories cleaned up in `afterEach`
 - Approval tests use in-memory SQLite
 - Scheduler instances stopped in cleanup

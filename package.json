@@ -1,11 +1,11 @@
 {
-  "name": "mudpuppy",
+  "name": "matrioshka-brain",
   "version": "2.0.0",
   "description": "MCP-first autonomous AI agent with Telegram, memory, and heartbeat",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "mudpuppy": "./dist/cli/index.js"
+    "matrioshka-brain": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc && chmod +x dist/cli/index.js",
@@ -26,7 +26,7 @@
     "mcp",
     "telegram",
     "memory",
-    "mudpuppy"
+    "matrioshka-brain"
   ],
   "author": "",
   "license": "MIT",

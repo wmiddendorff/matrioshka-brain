@@ -43,7 +43,7 @@ Propose a change to a soul or agents file. Creates a pending approval.
   "proposalId": "a1b2c3d4-...",
   "diff": "--- current/SOUL.md\n+++ proposed/SOUL.md\n@@ ...",
   "status": "pending",
-  "message": "Proposal created. Use \"mudpuppy soul list\" to view..."
+  "message": "Proposal created. Use \"matrioshka-brain soul list\" to view..."
 }
 ```
 
@@ -58,12 +58,12 @@ Only `soul` and `agents` files can be proposed for update. `identity` and `user`
 
 ## CLI Commands
 
-### `mudpuppy soul list`
+### `matrioshka-brain soul list`
 
 List pending soul proposals.
 
 ```
-$ mudpuppy soul list
+$ matrioshka-brain soul list
 Pending soul proposals (1):
 
   a1b2c3d4-e5f6-7890-abcd-ef1234567890
@@ -71,19 +71,19 @@ Pending soul proposals (1):
     Reason: Learned new communication preferences
     Created: 5m ago
 
-Use "mudpuppy soul show <id>" to see the diff.
-Use "mudpuppy soul approve <id>" or "mudpuppy soul deny <id>".
+Use "matrioshka-brain soul show <id>" to see the diff.
+Use "matrioshka-brain soul approve <id>" or "matrioshka-brain soul deny <id>".
 ```
 
-### `mudpuppy soul show <id>`
+### `matrioshka-brain soul show <id>`
 
 Show proposal details including the unified diff.
 
-### `mudpuppy soul approve <id>`
+### `matrioshka-brain soul approve <id>`
 
 Approve a proposal: writes the new content to the file, marks the proposal as approved, and logs the event to the daily memory log.
 
-### `mudpuppy soul deny <id>`
+### `matrioshka-brain soul deny <id>`
 
 Deny a proposal: marks it as denied without modifying the file.
 
@@ -100,7 +100,7 @@ import {
   getDefaultTemplate,
   unifiedDiff,
   SOUL_FILE_MAP,
-} from 'mudpuppy';
+} from 'matrioshka-brain';
 ```
 
 #### `readSoulFile(file: SoulFileType): SoulReadResult`
@@ -151,7 +151,7 @@ import {
   updateApprovalStatus,
   expireOldApprovals,
   closeApprovalDb,
-} from 'mudpuppy';
+} from 'matrioshka-brain';
 ```
 
 #### `createApproval(db, type, payload, expiresAt?): Approval`

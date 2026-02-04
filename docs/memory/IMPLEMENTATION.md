@@ -229,7 +229,7 @@ Measured on Linux with 10,000 entries (fake embeddings for insert, real search):
 
 ## Daily Log Module (`daily-log.ts`)
 
-Creates and appends to daily markdown log files at `~/.mudpuppy/workspace/memory/YYYY-MM-DD.md`.
+Creates and appends to daily markdown log files at `~/.matrioshka-brain/workspace/memory/YYYY-MM-DD.md`.
 
 - `ensureDailyLog()`: Creates directory and file with markdown header if needed
 - `appendToDailyLog(content, entryType, source)`: Appends timestamped line
@@ -239,7 +239,7 @@ Creates and appends to daily markdown log files at `~/.mudpuppy/workspace/memory
 
 ## File Auto-Indexer (`indexer.ts`)
 
-Watches `~/.mudpuppy/workspace/` for `.md` file changes and indexes their content.
+Watches `~/.matrioshka-brain/workspace/` for `.md` file changes and indexes their content.
 
 **Architecture:**
 - Primary: `fs.watch` with `recursive: true` (event-based, efficient)

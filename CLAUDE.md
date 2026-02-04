@@ -79,7 +79,7 @@ Every failure strengthens the system:
 
 ## Agent Behavior Protocol (MANDATORY)
 
-These instructions govern how Claude behaves in every session when the Mudpuppy MCP tools are available.
+These instructions govern how Claude behaves in every session when the Matrioshka Brain MCP tools are available.
 
 ### Session Start (Do This Every Time)
 
@@ -133,7 +133,7 @@ When you notice genuine patterns in how you interact with the user — communica
 
 ## Project Overview
 
-**Mudpuppy** 🐾 is a **more secure semi-clone** of OpenClaw, focusing on creating a fully autonomous AI agent that learns as it is used. Named after the aquatic salamander that never stops learning and evolving, Mudpuppy extends Claude Code directly with selected features from OpenClaw while prioritizing security and controlled autonomy.
+**Matrioshka Brain** is a **more secure semi-clone** of OpenClaw, focusing on creating a fully autonomous AI agent that learns as it is used. Named after the matrioshka brain megastructure concept from Charles Stross's *Accelerando* — nested layers of computation wrapping a star — it represents an agent that grows layer by layer through interaction. Matrioshka Brain extends Claude Code directly with selected features from OpenClaw while prioritizing security and controlled autonomy.
 
 ## Core Features to Implement
 
@@ -161,7 +161,7 @@ When you notice genuine patterns in how you interact with the user — communica
   - `cron` (5-field cron expressions)
 - **Heartbeat mechanism** for periodic agent turns (configurable intervals)
 - Active hours support (timezone-aware scheduling)
-- Jobs persisted at `~/.mudpuppy/cron/jobs.json`
+- Jobs persisted at `~/.matrioshka-brain/cron/jobs.json`
 - Two execution modes: main session vs isolated sessions
 
 ### 3. Soul & Identity Separation
@@ -202,7 +202,7 @@ Critical conceptual framework for agent personality:
   - **MCP Tool** = Capability (telegram_poll, telegram_send, telegram_pair, telegram_status)
   - **Skill** = Persona/workflow (what to do with messages, personality injection)
   - **Hook** = Trigger (auto-check messages on session start)
-- **Tool manifest**: `~/.mudpuppy/tools/manifest.md` documents available tools
+- **Tool manifest**: `~/.matrioshka-brain/tools/manifest.md` documents available tools
 
 ### 5. Tool Usage and Availability
 - **Tool profiles**: minimal, coding, messaging, full
@@ -221,8 +221,8 @@ Key tool categories:
 - Cron: job management
 
 ### 6. File System Access
-- **Workspace-centric design**: Primary workspace at `~/.mudpuppy/workspace`
-- **Agent-specific directories**: `~/.mudpuppy/agents/<agentId>/`
+- **Workspace-centric design**: Primary workspace at `~/.matrioshka-brain/workspace`
+- **Agent-specific directories**: `~/.matrioshka-brain/agents/<agentId>/`
 - **Sandbox support** for isolation:
   - Docker-based sandboxing
   - Configurable access (none, ro, rw)
@@ -308,7 +308,7 @@ This clone prioritizes security over feature parity with OpenClaw:
 ## Workspace Structure
 
 ```
-~/.mudpuppy/
+~/.matrioshka-brain/
 ├── workspace/              # Main agent workspace
 │   ├── SOUL.md            # Core personality (evolves)
 │   ├── IDENTITY.md        # Agent identifiers
@@ -373,7 +373,7 @@ This project extends Claude Code by:
 - `src/autonomy/` - Heartbeat scheduler, parser, types
 
 **Skill Layer:**
-- `skills/mudpuppy/SKILL.md` - Claude Code skill (persona + workflows)
+- `skills/matrioshka-brain/SKILL.md` - Claude Code skill (persona + workflows)
 
 **MCP Integration:**
 - `.mcp.json.example` - MCP server config template (placeholder paths)

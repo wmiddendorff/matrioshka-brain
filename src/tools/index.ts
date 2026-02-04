@@ -1,5 +1,5 @@
 /**
- * Mudpuppy Tool Registry
+ * Matrioshka Brain Tool Registry
  *
  * Central registry for all MCP tools. Tools are grouped by category:
  * - telegram_*  : Telegram messaging

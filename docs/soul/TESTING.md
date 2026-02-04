@@ -8,7 +8,7 @@
 
 ### Isolation
 
-- **Soul Files**: Each test uses a temporary directory via `mkdtempSync()` with `MUDPUPPY_HOME` env var override. Cleaned up in `afterEach`.
+- **Soul Files**: Each test uses a temporary directory via `mkdtempSync()` with `MATRIOSHKA_BRAIN_HOME` env var override. Cleaned up in `afterEach`.
 - **Approval DB**: Uses in-memory SQLite (`:memory:`) via `initApprovalDbFrom()`. No disk state between tests.
 
 ### Test Categories
@@ -91,11 +91,11 @@ npx vitest tests/soul.test.ts
 
 ## Manual Testing Checklist
 
-- [ ] `mudpuppy init` creates bootstrap files in workspace/
+- [ ] `matrioshka-brain init` creates bootstrap files in workspace/
 - [ ] MCP tool `soul_read {file: "soul"}` returns SOUL.md content
 - [ ] Edit SOUL.md manually → `soul_read` shows updated content
 - [ ] `soul_propose_update` creates proposal with diff
-- [ ] `mudpuppy soul list` shows pending proposal
-- [ ] `mudpuppy soul show <id>` displays diff
-- [ ] `mudpuppy soul approve <id>` updates file on disk
-- [ ] `mudpuppy soul deny <id>` marks proposal as denied without changing file
+- [ ] `matrioshka-brain soul list` shows pending proposal
+- [ ] `matrioshka-brain soul show <id>` displays diff
+- [ ] `matrioshka-brain soul approve <id>` updates file on disk
+- [ ] `matrioshka-brain soul deny <id>` marks proposal as denied without changing file

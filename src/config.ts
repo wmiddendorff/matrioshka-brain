@@ -1,26 +1,26 @@
 /**
- * Mudpuppy Configuration Manager
+ * Matrioshka Brain Configuration Manager
  *
  * Handles configuration loading/saving with portable path resolution.
- * All paths use $MUDPUPPY_HOME or default to ~/.mudpuppy
+ * All paths use $MATRIOSHKA_BRAIN_HOME or default to ~/.matrioshka-brain
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-// Get MUDPUPPY_HOME from environment or default to ~/.mudpuppy
-export function getMudpuppyHome(): string {
-  return process.env.MUDPUPPY_HOME || join(homedir(), '.mudpuppy');
+// Get MATRIOSHKA_BRAIN_HOME from environment or default to ~/.matrioshka-brain
+export function getMatrioshkaBrainHome(): string {
+  return process.env.MATRIOSHKA_BRAIN_HOME || join(homedir(), '.matrioshka-brain');
 }
 
-// Resolve a path relative to MUDPUPPY_HOME
+// Resolve a path relative to MATRIOSHKA_BRAIN_HOME
 export function resolvePath(relativePath: string): string {
-  return join(getMudpuppyHome(), relativePath);
+  return join(getMatrioshkaBrainHome(), relativePath);
 }
 
 // Default configuration
-export interface MudpuppyConfig {
+export interface MatrioshkaBrainConfig {
   version: string;
   telegram: {
     enabled: boolean;
@@ -54,7 +54,7 @@ export interface MudpuppyConfig {
   };
 }
 
-const DEFAULT_CONFIG: MudpuppyConfig = {
+const DEFAULT_CONFIG: MatrioshkaBrainConfig = {
   version: '2.0.0',
   telegram: {
     enabled: false,
@@ -84,7 +84,7 @@ const DEFAULT_CONFIG: MudpuppyConfig = {
 };
 
 export class ConfigManager {
-  private config: MudpuppyConfig;
+  private config: MatrioshkaBrainConfig;
   private configPath: string;
 
   constructor() {
@@ -95,7 +95,7 @@ export class ConfigManager {
   /**
    * Load configuration from file or create default
    */
-  private load(): MudpuppyConfig {
+  private load(): MatrioshkaBrainConfig {
     if (existsSync(this.configPath)) {
       try {
         const content = readFileSync(this.configPath, 'utf-8');
@@ -113,7 +113,7 @@ export class ConfigManager {
   /**
    * Merge loaded config with defaults (handles missing fields)
    */
-  private mergeWithDefaults(loaded: Partial<MudpuppyConfig>): MudpuppyConfig {
+  private mergeWithDefaults(loaded: Partial<MatrioshkaBrainConfig>): MatrioshkaBrainConfig {
     return {
       ...DEFAULT_CONFIG,
       ...loaded,
@@ -135,7 +135,7 @@ export class ConfigManager {
    * Save configuration to file
    */
   save(): void {
-    const dir = getMudpuppyHome();
+    const dir = getMatrioshkaBrainHome();
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
@@ -145,7 +145,7 @@ export class ConfigManager {
   /**
    * Get the full configuration
    */
-  get(): MudpuppyConfig {
+  get(): MatrioshkaBrainConfig {
     return this.config;
   }
 
@@ -204,7 +204,7 @@ export class ConfigManager {
  * Initialize workspace directory structure
  */
 export function initWorkspace(): { created: string[]; existed: string[] } {
-  const home = getMudpuppyHome();
+  const home = getMatrioshkaBrainHome();
   const dirs = [
     '',                    // root
     'workspace',           // soul/identity files

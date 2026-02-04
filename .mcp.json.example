@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "mudpuppy": {
+    "matrioshka-brain": {
       "command": "node",
       "args": ["<PROJECT_ROOT>/dist/mcp-server.js"],
       "env": {
-        "MUDPUPPY_HOME": "<HOME>/.mudpuppy"
+        "MATRIOSHKA_BRAIN_HOME": "<HOME>/.matrioshka-brain"
       }
     }
   }

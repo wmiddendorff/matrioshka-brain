@@ -1,7 +1,7 @@
 /**
  * Telegram Module
  *
- * Provides Telegram integration for Mudpuppy:
+ * Provides Telegram integration for Matrioshka Brain:
  * - Bot daemon that connects to Telegram API
  * - IPC client for MCP tools
  * - Message queue and pairing management

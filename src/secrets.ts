@@ -1,7 +1,7 @@
 /**
- * Mudpuppy Secrets Manager
+ * Matrioshka Brain Secrets Manager
  *
- * Handles loading and saving secrets from ~/.mudpuppy/secrets.env
+ * Handles loading and saving secrets from ~/.matrioshka-brain/secrets.env
  * Secrets are stored in dotenv format and never committed to git.
  */
 
@@ -12,7 +12,7 @@ import { resolvePath } from './config.js';
 const SECRETS_FILE = 'secrets.env';
 
 /**
- * Known secret keys used by Mudpuppy
+ * Known secret keys used by Matrioshka Brain
  */
 export type SecretKey = 'TELEGRAM_BOT_TOKEN' | 'OPENAI_API_KEY' | string;
 
@@ -53,7 +53,7 @@ function parseDotenv(content: string): Record<string, string> {
  */
 function serializeDotenv(secrets: Record<string, string>): string {
   const lines: string[] = [
-    '# Mudpuppy Secrets',
+    '# Matrioshka Brain Secrets',
     '# This file is gitignored and contains sensitive credentials',
     '',
   ];

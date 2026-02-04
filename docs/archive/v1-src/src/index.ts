@@ -1,8 +1,8 @@
 /**
- * Mudpuppy 🐾 - Security-hardened autonomous AI agent
+ * MatrioshkaBrain 🧠 - Security-hardened autonomous AI agent
  *
  * Main entry point for programmatic use.
- * For CLI usage, use: mudpuppy command
+ * For CLI usage, use: matrioshka-brain command
  */
 
 export { ConfigManager } from './config.js';

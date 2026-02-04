@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Mudpuppy MCP Server
+ * Matrioshka Brain MCP Server
  *
- * Model Context Protocol server exposing Mudpuppy tools to Claude Code.
- * This is the core of Mudpuppy v2 - all capabilities are exposed as MCP tools.
+ * Model Context Protocol server exposing Matrioshka Brain tools to Claude Code.
+ * This is the core of Matrioshka Brain v2 - all capabilities are exposed as MCP tools.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -15,12 +15,12 @@ import {
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { getAllTools, executeTool, initTools } from './tools/index.js';
-import { getMudpuppyHome, isWorkspaceInitialized, ConfigManager } from './config.js';
+import { getMatrioshkaBrainHome, isWorkspaceInitialized, ConfigManager } from './config.js';
 
 // Create MCP server
 const server = new Server(
   {
-    name: 'mudpuppy',
+    name: 'matrioshka-brain',
     version: '2.0.0',
   },
   {
@@ -85,9 +85,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   // Check workspace initialization
   if (!isWorkspaceInitialized()) {
-    console.error(`Mudpuppy workspace not initialized.`);
-    console.error(`Run: mudpuppy init`);
-    console.error(`Workspace: ${getMudpuppyHome()}`);
+    console.error(`Matrioshka Brain workspace not initialized.`);
+    console.error(`Run: matrioshka-brain init`);
+    console.error(`Workspace: ${getMatrioshkaBrainHome()}`);
     // Continue anyway - tools can still work
   }
 
@@ -101,7 +101,7 @@ async function main() {
       const { startIndexer } = await import('./memory/indexer.js');
       const interval = config.getValue<number>('memory.indexInterval') ?? 5000;
       await startIndexer({ interval });
-      console.error(`Mudpuppy file indexer started (interval: ${interval}ms)`);
+      console.error(`Matrioshka Brain file indexer started (interval: ${interval}ms)`);
     }
   } catch (err) {
     console.error('Failed to start file indexer:', err);
@@ -120,7 +120,7 @@ async function main() {
         requireApproval: config2.getValue<boolean>('heartbeat.requireApproval') ?? true,
       });
       scheduler.start();
-      console.error(`Mudpuppy heartbeat started (interval: ${scheduler.getState().interval}ms)`);
+      console.error(`Matrioshka Brain heartbeat started (interval: ${scheduler.getState().interval}ms)`);
     }
   } catch (err) {
     console.error('Failed to start heartbeat scheduler:', err);
@@ -131,8 +131,8 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  console.error(`Mudpuppy MCP server started`);
-  console.error(`Workspace: ${getMudpuppyHome()}`);
+  console.error(`Matrioshka Brain MCP server started`);
+  console.error(`Workspace: ${getMatrioshkaBrainHome()}`);
 }
 
 main().catch((error) => {

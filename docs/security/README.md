@@ -1,6 +1,6 @@
 # Security Model
 
-Mudpuppy follows a **security-first** design philosophy: capabilities are restricted by default and explicitly granted. This document covers the threat model, security controls, and operational boundaries.
+Matrioshka Brain follows a **security-first** design philosophy: capabilities are restricted by default and explicitly granted. This document covers the threat model, security controls, and operational boundaries.
 
 ## Threat Model
 
@@ -21,7 +21,7 @@ Mudpuppy follows a **security-first** design philosophy: capabilities are restri
 
 1. **User ↔ Agent**: The user trusts the agent to follow SOUL.md and AGENTS.md boundaries. The approval system ensures the agent cannot unilaterally change these.
 2. **Agent ↔ Telegram**: Only paired users can send messages. Pairing requires human approval.
-3. **Agent ↔ Filesystem**: Limited to `~/.mudpuppy/` workspace. No arbitrary file access.
+3. **Agent ↔ Filesystem**: Limited to `~/.matrioshka-brain/` workspace. No arbitrary file access.
 4. **Agent ↔ Autonomy**: Heartbeat actions can require approval before execution. Active hours limit when autonomous actions occur.
 
 ## Security Controls
@@ -32,15 +32,15 @@ Three types of operations require explicit human approval:
 
 | Approval Type | Trigger | Approval Method |
 |---------------|---------|-----------------|
-| `soul_update` | `soul_propose_update` tool | `mudpuppy soul approve <id>` |
+| `soul_update` | `soul_propose_update` tool | `matrioshka-brain soul approve <id>` |
 | `telegram_pair` | User sends `/start` to bot | `telegram_pair {action: "approve"}` |
-| `heartbeat_action` | Heartbeat tick (when `requireApproval: true`) | `mudpuppy soul approve <id>` |
+| `heartbeat_action` | Heartbeat tick (when `requireApproval: true`) | `matrioshka-brain soul approve <id>` |
 
-Approvals are stored in `~/.mudpuppy/data/approvals.db` (SQLite, WAL mode). Expired approvals are automatically cleaned up.
+Approvals are stored in `~/.matrioshka-brain/data/approvals.db` (SQLite, WAL mode). Expired approvals are automatically cleaned up.
 
 ### 2. Audit Logging
 
-All heartbeat actions are logged to `~/.mudpuppy/data/audit.log` in JSONL format:
+All heartbeat actions are logged to `~/.matrioshka-brain/data/audit.log` in JSONL format:
 
 ```json
 {
@@ -58,7 +58,7 @@ Sources: `heartbeat` (autonomous), `mcp` (user-initiated), `cli` (command line).
 
 ### 3. Secrets Management
 
-- Bot tokens stored in `~/.mudpuppy/secrets.env`
+- Bot tokens stored in `~/.matrioshka-brain/secrets.env`
 - Loaded via `dotenv` at runtime, never serialized into responses
 - `secrets.env` is in `.gitignore`
 - `SecretsManager.get(key)` and `set(key, value)` API
@@ -81,7 +81,7 @@ Every MCP tool validates input with a Zod schema before execution. Invalid input
 
 The Telegram bot runs as a separate daemon process:
 - Communicates via Unix socket IPC (newline-delimited JSON)
-- PID file at `~/.mudpuppy/telegram.pid`
+- PID file at `~/.matrioshka-brain/telegram.pid`
 - Crash doesn't affect MCP server
 - MCP server crash doesn't affect message queue
 
@@ -128,7 +128,7 @@ Even with full configuration access, the agent cannot:
 2. **Send Telegram messages to unpaired users** — bot enforces pairing at the protocol level
 3. **Execute tools not in the registry** — MCP server only exposes registered tools
 4. **Disable audit logging retroactively** — past log entries are append-only JSONL
-5. **Access files outside the workspace** — MCP tools only operate on `~/.mudpuppy/`
+5. **Access files outside the workspace** — MCP tools only operate on `~/.matrioshka-brain/`
 
 ## Related Documentation
 

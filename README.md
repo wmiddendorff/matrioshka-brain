@@ -1,12 +1,12 @@
-# Mudpuppy v2.0.0
+# Matrioshka Brain v2.0.0
 
 Security-hardened autonomous AI agent extending Claude Code with persistent memory, evolving personality, Telegram integration, and controlled autonomous execution.
 
-Named after the aquatic salamander that never stops learning and evolving.
+Named after the matrioshka brain megastructure from Charles Stross's *Accelerando* — nested layers of computation that grow ever more capable.
 
 ## Architecture
 
-Mudpuppy uses an **MCP-first architecture**. All capabilities are exposed as MCP tools that Claude Code connects to via the Model Context Protocol. An optional skill layer adds persona and workflow on top.
+Matrioshka Brain uses an **MCP-first architecture**. All capabilities are exposed as MCP tools that Claude Code connects to via the Model Context Protocol. An optional skill layer adds persona and workflow on top.
 
 ```
 ┌─────────────────┐
@@ -22,7 +22,7 @@ Mudpuppy uses an **MCP-first architecture**. All capabilities are exposed as MCP
          │
          ▼
 ┌─────────────────┐
-│   ~/.mudpuppy   │
+│   ~/.matrioshka-brain   │
 │   (workspace)   │
 └─────────────────┘
 ```
@@ -32,8 +32,8 @@ Mudpuppy uses an **MCP-first architecture**. All capabilities are exposed as MCP
 ### Automated Setup
 
 ```bash
-git clone <repo-url> mudpuppy
-cd mudpuppy
+git clone <repo-url> matrioshka-brain
+cd matrioshka-brain
 ./setup.sh
 ```
 
@@ -52,11 +52,11 @@ Then create `.mcp.json` in the project root (see `.mcp.json.example` for the tem
 ```json
 {
   "mcpServers": {
-    "mudpuppy": {
+    "matrioshka-brain": {
       "command": "node",
       "args": ["<absolute-path-to>/dist/mcp-server.js"],
       "env": {
-        "MUDPUPPY_HOME": "<home-dir>/.mudpuppy"
+        "MATRIOSHKA_BRAIN_HOME": "<home-dir>/.matrioshka-brain"
       }
     }
   }
@@ -91,33 +91,33 @@ Open the project in Claude Code. The MCP server starts automatically.
 ## CLI Commands
 
 ```bash
-mudpuppy init                        # Initialize workspace at ~/.mudpuppy
-mudpuppy config get [path]           # Read config (e.g., "heartbeat.enabled")
-mudpuppy config set <path> <value>   # Update config
-mudpuppy status                      # Show system status
+matrioshka-brain init                        # Initialize workspace at ~/.matrioshka-brain
+matrioshka-brain config get [path]           # Read config (e.g., "heartbeat.enabled")
+matrioshka-brain config set <path> <value>   # Update config
+matrioshka-brain status                      # Show system status
 
-mudpuppy telegram start              # Start bot daemon
-mudpuppy telegram stop               # Stop bot daemon
-mudpuppy telegram restart            # Restart bot daemon
-mudpuppy telegram status             # Check daemon status
-mudpuppy telegram set-token          # Set bot token (interactive)
+matrioshka-brain telegram start              # Start bot daemon
+matrioshka-brain telegram stop               # Stop bot daemon
+matrioshka-brain telegram restart            # Restart bot daemon
+matrioshka-brain telegram status             # Check daemon status
+matrioshka-brain telegram set-token          # Set bot token (interactive)
 
-mudpuppy soul list                   # List pending soul update proposals
-mudpuppy soul show <id>              # Show proposal with diff
-mudpuppy soul approve <id>           # Approve a soul update
-mudpuppy soul deny <id>              # Deny a soul update
+matrioshka-brain soul list                   # List pending soul update proposals
+matrioshka-brain soul show <id>              # Show proposal with diff
+matrioshka-brain soul approve <id>           # Approve a soul update
+matrioshka-brain soul deny <id>              # Deny a soul update
 
-mudpuppy heartbeat status            # Show scheduler status
-mudpuppy heartbeat pause             # Pause heartbeat
-mudpuppy heartbeat resume            # Resume heartbeat
+matrioshka-brain heartbeat status            # Show scheduler status
+matrioshka-brain heartbeat pause             # Pause heartbeat
+matrioshka-brain heartbeat resume            # Resume heartbeat
 ```
 
-If not installed globally, use `node dist/cli/index.js` instead of `mudpuppy`.
+If not installed globally, use `node dist/cli/index.js` instead of `matrioshka-brain`.
 
 ## Workspace Structure
 
 ```
-~/.mudpuppy/
+~/.matrioshka-brain/
 ├── workspace/              # Agent bootstrap files
 │   ├── SOUL.md            # Personality and communication style
 │   ├── IDENTITY.md        # Name, emoji, vibe
@@ -137,7 +137,7 @@ If not installed globally, use `node dist/cli/index.js` instead of `mudpuppy`.
 
 The optional skill layer gives the agent a persistent persona. To install:
 
-1. Copy `skills/mudpuppy/SKILL.md` to `~/.claude/skills/mudpuppy/SKILL.md`
+1. Copy `skills/matrioshka-brain/SKILL.md` to `~/.claude/skills/matrioshka-brain/SKILL.md`
 2. The skill activates automatically when Claude Code detects it
 
 The skill instructs Claude to:
@@ -221,7 +221,7 @@ tests/
 
 ## Security
 
-Mudpuppy follows a **security-first** design:
+Matrioshka Brain follows a **security-first** design:
 
 - **Approval system** — Soul updates, Telegram pairings, and heartbeat actions require explicit human approval
 - **Audit logging** — All autonomous actions logged to JSONL audit trail

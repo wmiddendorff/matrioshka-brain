@@ -43,7 +43,7 @@ export async function sendRequest(
   // Check if socket exists
   if (!existsSync(socketPath)) {
     if (!isDaemonRunning()) {
-      throw new Error('Telegram bot daemon is not running. Start it with: mudpuppy telegram start');
+      throw new Error('Telegram bot daemon is not running. Start it with: matrioshka-brain telegram start');
     }
     throw new Error('Socket file not found but daemon appears running. Try restarting the daemon.');
   }

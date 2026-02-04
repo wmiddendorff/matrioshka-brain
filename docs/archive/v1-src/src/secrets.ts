@@ -6,7 +6,7 @@ import { homedir } from 'os';
 /**
  * Secrets Manager
  *
- * Handles loading and storing secrets from ~/.mudpuppy/secrets.env
+ * Handles loading and storing secrets from ~/.matrioshka-brain/secrets.env
  *
  * SECURITY: This file is gitignored. Never commit secrets to version control.
  */
@@ -22,7 +22,7 @@ export class SecretsManager {
   private secrets: Secrets = {};
 
   constructor() {
-    this.secretsPath = join(homedir(), '.mudpuppy', 'secrets.env');
+    this.secretsPath = join(homedir(), '.matrioshka-brain', 'secrets.env');
     this.load();
   }
 
@@ -65,14 +65,14 @@ export class SecretsManager {
    * Save secrets to secrets.env file
    */
   public save(): void {
-    const dir = join(homedir(), '.mudpuppy');
+    const dir = join(homedir(), '.matrioshka-brain');
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
 
     // Format as KEY=value lines
     const lines: string[] = [
-      '# Mudpuppy Secrets',
+      '# MatrioshkaBrain Secrets',
       '# DO NOT COMMIT THIS FILE TO VERSION CONTROL',
       '',
     ];

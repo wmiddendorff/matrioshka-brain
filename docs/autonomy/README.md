@@ -7,11 +7,11 @@ The autonomy module provides periodic self-initiated execution via the **heartbe
 1. Enable the heartbeat in configuration:
 
 ```bash
-mudpuppy config set heartbeat.enabled true
-mudpuppy config set heartbeat.interval 1800000   # 30 minutes
+matrioshka-brain config set heartbeat.enabled true
+matrioshka-brain config set heartbeat.interval 1800000   # 30 minutes
 ```
 
-2. Edit `~/.mudpuppy/workspace/HEARTBEAT.md`:
+2. Edit `~/.matrioshka-brain/workspace/HEARTBEAT.md`:
 
 ```markdown
 # Heartbeat Tasks
@@ -50,8 +50,8 @@ Tasks in `HEARTBEAT.md` follow this convention:
 When `heartbeat.requireApproval` is `true` (default), tool executions create approval requests instead of running immediately. Approve via CLI:
 
 ```bash
-mudpuppy soul list    # also shows heartbeat_action approvals
-mudpuppy soul approve <id>
+matrioshka-brain soul list    # also shows heartbeat_action approvals
+matrioshka-brain soul approve <id>
 ```
 
 ## Architecture
@@ -100,9 +100,9 @@ mudpuppy soul approve <id>
 ## CLI Commands
 
 ```bash
-mudpuppy heartbeat status    # Show heartbeat configuration and task count
-mudpuppy heartbeat pause     # Instructions for pausing via MCP tool
-mudpuppy heartbeat resume    # Instructions for resuming via MCP tool
+matrioshka-brain heartbeat status    # Show heartbeat configuration and task count
+matrioshka-brain heartbeat pause     # Instructions for pausing via MCP tool
+matrioshka-brain heartbeat resume    # Instructions for resuming via MCP tool
 ```
 
 ## Related Documentation

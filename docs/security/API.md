@@ -20,7 +20,7 @@ interface Approval {
 
 ### Database Functions
 
-All functions operate on a SQLite database at `~/.mudpuppy/data/approvals.db`.
+All functions operate on a SQLite database at `~/.matrioshka-brain/data/approvals.db`.
 
 #### `createApproval(db, type, payload, expiresAt?)`
 
@@ -110,7 +110,7 @@ interface AuditEntry {
 
 #### `auditLog(entry)`
 
-Append an entry to `~/.mudpuppy/data/audit.log`. Creates the directory if missing.
+Append an entry to `~/.matrioshka-brain/data/audit.log`. Creates the directory if missing.
 
 ```typescript
 import { auditLog } from './audit/index.js';
@@ -152,29 +152,29 @@ One JSON object per line (JSONL), append-only:
 
 ```bash
 # List pending proposals
-mudpuppy soul list
+matrioshka-brain soul list
 
 # Show proposal details with diff
-mudpuppy soul show <approval-id>
+matrioshka-brain soul show <approval-id>
 
 # Approve (applies the update to the soul file)
-mudpuppy soul approve <approval-id>
+matrioshka-brain soul approve <approval-id>
 
 # Deny (marks as denied, no file changes)
-mudpuppy soul deny <approval-id>
+matrioshka-brain soul deny <approval-id>
 ```
 
 ### Heartbeat Control
 
 ```bash
 # Check if heartbeat is running and what's pending
-mudpuppy heartbeat status
+matrioshka-brain heartbeat status
 
 # Pause autonomous execution
-mudpuppy heartbeat pause
+matrioshka-brain heartbeat pause
 
 # Resume autonomous execution
-mudpuppy heartbeat resume
+matrioshka-brain heartbeat resume
 ```
 
 ## Config Options
@@ -184,8 +184,8 @@ mudpuppy heartbeat resume
 Array of operation names that require approval. Default: `["soul_propose_update", "telegram_pair"]`.
 
 ```bash
-mudpuppy config get security.approvalRequired
-mudpuppy config set security.approvalRequired '["soul_propose_update"]'
+matrioshka-brain config get security.approvalRequired
+matrioshka-brain config set security.approvalRequired '["soul_propose_update"]'
 ```
 
 ### `security.auditLog`
@@ -193,7 +193,7 @@ mudpuppy config set security.approvalRequired '["soul_propose_update"]'
 Enable/disable audit logging. Default: `true`.
 
 ```bash
-mudpuppy config set security.auditLog true
+matrioshka-brain config set security.auditLog true
 ```
 
 ### `security.maxMessageLength`
@@ -205,7 +205,7 @@ Maximum allowed message length for Telegram sends. Default: `4096`.
 When `true`, heartbeat actions create approval requests instead of executing directly. Default: `true`.
 
 ```bash
-mudpuppy config set heartbeat.requireApproval false  # Live dangerously
+matrioshka-brain config set heartbeat.requireApproval false  # Live dangerously
 ```
 
 ### `heartbeat.maxActionsPerBeat`
@@ -217,5 +217,5 @@ Maximum tools executed per heartbeat tick. Default: `5`.
 Time window for autonomous execution:
 
 ```bash
-mudpuppy config set heartbeat.activeHours '{"start":"08:00","end":"22:00","timezone":"America/New_York"}'
+matrioshka-brain config set heartbeat.activeHours '{"start":"08:00","end":"22:00","timezone":"America/New_York"}'
 ```

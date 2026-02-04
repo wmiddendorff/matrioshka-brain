@@ -1,16 +1,16 @@
 /**
- * Mudpuppy v2 - MCP-first autonomous AI agent
+ * Matrioshka Brain v2 - MCP-first autonomous AI agent
  *
  * Main exports for programmatic usage.
  */
 
 export {
   ConfigManager,
-  getMudpuppyHome,
+  getMatrioshkaBrainHome,
   resolvePath,
   initWorkspace,
   isWorkspaceInitialized,
-  type MudpuppyConfig,
+  type MatrioshkaBrainConfig,
 } from './config.js';
 
 export {

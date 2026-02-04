@@ -9,20 +9,20 @@ import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-// We need to mock MUDPUPPY_HOME before importing the module
-const TEST_HOME = join(tmpdir(), `mudpuppy-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+// We need to mock MATRIOSHKA_BRAIN_HOME before importing the module
+const TEST_HOME = join(tmpdir(), `matrioshka-brain-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 // Set env before importing
-process.env.MUDPUPPY_HOME = TEST_HOME;
+process.env.MATRIOSHKA_BRAIN_HOME = TEST_HOME;
 
 // Now import the module
 import {
-  getMudpuppyHome,
+  getMatrioshkaBrainHome,
   resolvePath,
   initWorkspace,
   isWorkspaceInitialized,
   ConfigManager,
-  MudpuppyConfig,
+  MatrioshkaBrainConfig,
 } from '../src/config.js';
 
 describe('Config Module', () => {
@@ -40,14 +40,14 @@ describe('Config Module', () => {
     }
   });
 
-  describe('getMudpuppyHome', () => {
-    it('returns MUDPUPPY_HOME from environment', () => {
-      expect(getMudpuppyHome()).toBe(TEST_HOME);
+  describe('getMatrioshkaBrainHome', () => {
+    it('returns MATRIOSHKA_BRAIN_HOME from environment', () => {
+      expect(getMatrioshkaBrainHome()).toBe(TEST_HOME);
     });
   });
 
   describe('resolvePath', () => {
-    it('resolves relative path to MUDPUPPY_HOME', () => {
+    it('resolves relative path to MATRIOSHKA_BRAIN_HOME', () => {
       expect(resolvePath('config.json')).toBe(join(TEST_HOME, 'config.json'));
     });
 

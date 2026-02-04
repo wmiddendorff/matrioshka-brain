@@ -37,7 +37,7 @@ export interface Config {
 
 const DEFAULT_CONFIG: Config = {
   version: '0.1.0',
-  workspace: join(homedir(), '.mudpuppy'),
+  workspace: join(homedir(), '.matrioshka-brain'),
   heartbeat: {
     enabled: false,
     interval: 1800000, // 30 minutes
@@ -67,7 +67,7 @@ export class ConfigManager {
   private configPath: string;
 
   constructor() {
-    this.configPath = join(homedir(), '.mudpuppy', 'config.json');
+    this.configPath = join(homedir(), '.matrioshka-brain', 'config.json');
     this.config = this.load();
   }
 

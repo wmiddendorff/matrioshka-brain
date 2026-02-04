@@ -32,7 +32,7 @@ If the same content already exists:
 ```
 
 **Side effects:**
-- On successful creation (when `source` is not `'file-index'`), appends a timestamped entry to the daily log at `~/.mudpuppy/workspace/memory/YYYY-MM-DD.md`
+- On successful creation (when `source` is not `'file-index'`), appends a timestamped entry to the daily log at `~/.matrioshka-brain/workspace/memory/YYYY-MM-DD.md`
 
 **Example:**
 
@@ -211,7 +211,7 @@ If entry does not exist:
 Get or create the singleton memory database instance. Creates the schema on first call.
 
 ```typescript
-import { getMemoryDb } from 'mudpuppy';
+import { getMemoryDb } from 'matrioshka-brain';
 const db = getMemoryDb();
 ```
 
@@ -224,7 +224,7 @@ Close the database connection. Used for cleanup in tests.
 Generate SHA-256 hash of content for deduplication.
 
 ```typescript
-import { contentHash } from 'mudpuppy';
+import { contentHash } from 'matrioshka-brain';
 const hash = contentHash('hello world');
 // '7509e5bda...' (64 char hex string)
 ```
@@ -236,7 +236,7 @@ const hash = contentHash('hello world');
 Add a memory entry with its embedding vector.
 
 ```typescript
-import { getMemoryDb, addEntry, generateEmbedding } from 'mudpuppy';
+import { getMemoryDb, addEntry, generateEmbedding } from 'matrioshka-brain';
 
 const db = getMemoryDb();
 const embedding = await generateEmbedding('User prefers dark mode');
@@ -261,7 +261,7 @@ Delete a memory entry. Returns `true` if deleted, `false` if not found.
 Log an access to a memory entry and increment its access count.
 
 ```typescript
-import { getMemoryDb, logAccess } from 'mudpuppy';
+import { getMemoryDb, logAccess } from 'matrioshka-brain';
 logAccess(getMemoryDb(), 1, 'search', 0.85, 'UI preferences');
 ```
 
@@ -284,7 +284,7 @@ Low-level FTS5 keyword search with BM25 ranking.
 High-level hybrid search combining vector and keyword results. Supports configurable weights.
 
 ```typescript
-import { getMemoryDb, hybridSearch } from 'mudpuppy';
+import { getMemoryDb, hybridSearch } from 'matrioshka-brain';
 
 const results = await hybridSearch(getMemoryDb(), {
   query: 'UI preferences',
@@ -324,8 +324,8 @@ Preload the embedding model to avoid latency on first search.
 Ensure today's daily log file exists. Creates the directory and file with a markdown header if they don't exist. Returns the file path. Caches the date to avoid repeated filesystem checks.
 
 ```typescript
-import { ensureDailyLog } from 'mudpuppy';
-const logPath = ensureDailyLog(); // ~/.mudpuppy/workspace/memory/2026-02-03.md
+import { ensureDailyLog } from 'matrioshka-brain';
+const logPath = ensureDailyLog(); // ~/.matrioshka-brain/workspace/memory/2026-02-03.md
 ```
 
 #### `appendToDailyLog(content, entryType, source): void`
@@ -333,7 +333,7 @@ const logPath = ensureDailyLog(); // ~/.mudpuppy/workspace/memory/2026-02-03.md
 Append a timestamped entry to today's daily log.
 
 ```typescript
-import { appendToDailyLog } from 'mudpuppy';
+import { appendToDailyLog } from 'matrioshka-brain';
 appendToDailyLog('User prefers dark mode', 'preference', 'manual');
 // Appends: "- **14:30:00** [preference] (manual) User prefers dark mode"
 ```
@@ -346,10 +346,10 @@ Get the path to a daily log file. Defaults to today.
 
 #### `startIndexer(options?): Promise<void>`
 
-Start the file auto-indexer. Watches `~/.mudpuppy/workspace/` for `.md` file changes.
+Start the file auto-indexer. Watches `~/.matrioshka-brain/workspace/` for `.md` file changes.
 
 ```typescript
-import { startIndexer } from 'mudpuppy';
+import { startIndexer } from 'matrioshka-brain';
 await startIndexer({ interval: 5000 }); // polling interval (fallback)
 ```
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Mudpuppy CLI
+ * Matrioshka Brain CLI
  *
- * Command-line interface for managing Mudpuppy.
+ * Command-line interface for managing Matrioshka Brain.
  */
 
-import { ConfigManager, getMudpuppyHome, initWorkspace, isWorkspaceInitialized, resolvePath } from '../config.js';
+import { ConfigManager, getMatrioshkaBrainHome, initWorkspace, isWorkspaceInitialized, resolvePath } from '../config.js';
 import { SecretsManager } from '../secrets.js';
 import {
   startDaemon,
@@ -23,12 +23,12 @@ const VERSION = '2.0.0';
 
 function printHelp(): void {
   console.log(`
-Mudpuppy v${VERSION} - MCP-first autonomous AI agent
+Matrioshka Brain v${VERSION} - MCP-first autonomous AI agent
 
-Usage: mudpuppy <command> [options]
+Usage: matrioshka-brain <command> [options]
 
 Commands:
-  init                    Initialize workspace at $MUDPUPPY_HOME
+  init                    Initialize workspace at $MATRIOSHKA_BRAIN_HOME
   config get [path]       Get config value (or full config if no path)
   config set <path> <val> Set config value
   status                  Show system status
@@ -53,26 +53,26 @@ Heartbeat:
   heartbeat resume        Resume the heartbeat
 
 Environment:
-  MUDPUPPY_HOME           Workspace directory (default: ~/.mudpuppy)
+  MATRIOSHKA_BRAIN_HOME           Workspace directory (default: ~/.matrioshka-brain)
 
 Examples:
-  mudpuppy init
-  mudpuppy config get telegram.enabled
-  mudpuppy config set telegram.enabled true
-  mudpuppy telegram set-token <token>
-  mudpuppy telegram start
+  matrioshka-brain init
+  matrioshka-brain config get telegram.enabled
+  matrioshka-brain config set telegram.enabled true
+  matrioshka-brain telegram set-token <token>
+  matrioshka-brain telegram start
 `);
 }
 
 function printVersion(): void {
-  console.log(`Mudpuppy v${VERSION}`);
-  console.log(`Workspace: ${getMudpuppyHome()}`);
+  console.log(`Matrioshka Brain v${VERSION}`);
+  console.log(`Workspace: ${getMatrioshkaBrainHome()}`);
   console.log(`Initialized: ${isWorkspaceInitialized() ? 'Yes' : 'No'}`);
 }
 
 async function cmdInit(): Promise<void> {
-  console.log(`Initializing Mudpuppy workspace...`);
-  console.log(`Location: ${getMudpuppyHome()}`);
+  console.log(`Initializing Matrioshka Brain workspace...`);
+  console.log(`Location: ${getMatrioshkaBrainHome()}`);
   console.log();
 
   const { created, existed } = initWorkspace();
@@ -102,11 +102,11 @@ async function cmdInit(): Promise<void> {
   console.log('\n✅ Workspace initialized!');
   console.log('\nNext steps:');
   console.log('  1. Set up Telegram (optional):');
-  console.log('     mudpuppy config set telegram.enabled true');
-  console.log('     mudpuppy telegram set-token <token-from-BotFather>');
-  console.log('     mudpuppy telegram start');
+  console.log('     matrioshka-brain config set telegram.enabled true');
+  console.log('     matrioshka-brain telegram set-token <token-from-BotFather>');
+  console.log('     matrioshka-brain telegram start');
   console.log('  2. Enable autonomous heartbeat:');
-  console.log('     mudpuppy config set heartbeat.enabled true');
+  console.log('     matrioshka-brain config set heartbeat.enabled true');
   console.log('  3. Start a conversation with the agent in Claude Code');
   console.log('     The agent will introduce itself and learn about you.');
   console.log('  4. After setup, the agent remembers you across sessions');
@@ -160,7 +160,7 @@ async function createDefaultWorkspaceFiles(): Promise<void> {
 HEARTBEAT_OK
 `;
 
-  files['tools/manifest.md'] = `# Mudpuppy Tools
+  files['tools/manifest.md'] = `# Matrioshka Brain Tools
 
 ## Config
 | Tool | Purpose | Requires Approval |
@@ -248,9 +248,9 @@ function cmdConfigSet(path: string, value: string): void {
 }
 
 function cmdStatus(): void {
-  console.log(`Mudpuppy v${VERSION}`);
+  console.log(`Matrioshka Brain v${VERSION}`);
   console.log();
-  console.log(`Workspace: ${getMudpuppyHome()}`);
+  console.log(`Workspace: ${getMatrioshkaBrainHome()}`);
   console.log(`Initialized: ${isWorkspaceInitialized() ? 'Yes' : 'No'}`);
 
   if (isWorkspaceInitialized()) {
@@ -314,7 +314,7 @@ async function cmdTelegramStart(): Promise<void> {
   const secrets = new SecretsManager();
   if (!secrets.has('TELEGRAM_BOT_TOKEN')) {
     console.error('TELEGRAM_BOT_TOKEN not set');
-    console.error('Set it with: mudpuppy telegram set-token <token>');
+    console.error('Set it with: matrioshka-brain telegram set-token <token>');
     process.exit(1);
   }
 
@@ -374,7 +374,7 @@ async function cmdTelegramStatus(): Promise<void> {
   if (!info.running) {
     console.log('Telegram bot daemon: Not running');
     console.log();
-    console.log('Start with: mudpuppy telegram start');
+    console.log('Start with: matrioshka-brain telegram start');
     return;
   }
 
@@ -410,7 +410,7 @@ async function cmdTelegramStatus(): Promise<void> {
 
 function cmdTelegramSetToken(token?: string): void {
   if (!token) {
-    console.error('Usage: mudpuppy telegram set-token <token>');
+    console.error('Usage: matrioshka-brain telegram set-token <token>');
     console.error();
     console.error('Get a token from @BotFather on Telegram');
     process.exit(1);
@@ -433,10 +433,10 @@ function cmdTelegramSetToken(token?: string): void {
   // Restart daemon if running
   if (isDaemonRunning()) {
     console.log('Daemon is running. Restart it to use the new token:');
-    console.log('  mudpuppy telegram restart');
+    console.log('  matrioshka-brain telegram restart');
   } else {
     console.log('Start the bot with:');
-    console.log('  mudpuppy telegram start');
+    console.log('  matrioshka-brain telegram start');
   }
 }
 
@@ -494,13 +494,13 @@ async function cmdSoulList(): Promise<void> {
     console.log();
   }
 
-  console.log('Use "mudpuppy soul show <id>" to see the diff.');
-  console.log('Use "mudpuppy soul approve <id>" or "mudpuppy soul deny <id>".');
+  console.log('Use "matrioshka-brain soul show <id>" to see the diff.');
+  console.log('Use "matrioshka-brain soul approve <id>" or "matrioshka-brain soul deny <id>".');
 }
 
 async function cmdSoulShow(id?: string): Promise<void> {
   if (!id) {
-    console.error('Usage: mudpuppy soul show <id>');
+    console.error('Usage: matrioshka-brain soul show <id>');
     process.exit(1);
   }
 
@@ -534,7 +534,7 @@ async function cmdSoulShow(id?: string): Promise<void> {
 
 async function cmdSoulApprove(id?: string): Promise<void> {
   if (!id) {
-    console.error('Usage: mudpuppy soul approve <id>');
+    console.error('Usage: matrioshka-brain soul approve <id>');
     process.exit(1);
   }
 
@@ -584,7 +584,7 @@ async function cmdSoulApprove(id?: string): Promise<void> {
 
 async function cmdSoulDeny(id?: string): Promise<void> {
   if (!id) {
-    console.error('Usage: mudpuppy soul deny <id>');
+    console.error('Usage: matrioshka-brain soul deny <id>');
     process.exit(1);
   }
 
@@ -673,20 +673,20 @@ async function cmdHeartbeatStatus(): Promise<void> {
 
   if (!enabled) {
     console.log();
-    console.log('Enable with: mudpuppy config set heartbeat.enabled true');
+    console.log('Enable with: matrioshka-brain config set heartbeat.enabled true');
   }
 }
 
 function cmdHeartbeatPause(): void {
   console.log('Note: The heartbeat runs inside the MCP server process.');
   console.log('Use the heartbeat_pause MCP tool to pause a running heartbeat.');
-  console.log('Or disable it: mudpuppy config set heartbeat.enabled false');
+  console.log('Or disable it: matrioshka-brain config set heartbeat.enabled false');
 }
 
 function cmdHeartbeatResume(): void {
   console.log('Note: The heartbeat runs inside the MCP server process.');
   console.log('Use the heartbeat_resume MCP tool to resume a paused heartbeat.');
-  console.log('Or enable it: mudpuppy config set heartbeat.enabled true');
+  console.log('Or enable it: matrioshka-brain config set heartbeat.enabled true');
 }
 
 // Parse and execute command
@@ -705,12 +705,12 @@ async function main(): Promise<void> {
         cmdConfigGet(args[2]);
       } else if (subCmd === 'set') {
         if (!args[2] || args[3] === undefined) {
-          console.error('Usage: mudpuppy config set <path> <value>');
+          console.error('Usage: matrioshka-brain config set <path> <value>');
           process.exit(1);
         }
         cmdConfigSet(args[2], args[3]);
       } else {
-        console.error('Usage: mudpuppy config <get|set> ...');
+        console.error('Usage: matrioshka-brain config <get|set> ...');
         process.exit(1);
       }
       break;
@@ -746,7 +746,7 @@ async function main(): Promise<void> {
 
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Run "mudpuppy help" for usage.');
+      console.error('Run "matrioshka-brain help" for usage.');
       process.exit(1);
   }
 }

@@ -4,12 +4,12 @@ The memory system provides persistent knowledge storage with hybrid search, comb
 
 ## Overview
 
-- **Database**: `~/.mudpuppy/data/memory.db` (SQLite + sqlite-vec + FTS5)
+- **Database**: `~/.matrioshka-brain/data/memory.db` (SQLite + sqlite-vec + FTS5)
 - **Embeddings**: Local all-MiniLM-L6-v2 via `@xenova/transformers` (384 dimensions)
 - **Search**: Hybrid (configurable weights, default 0.7 vector + 0.3 keyword), pure vector, or pure keyword
 - **Deduplication**: SHA-256 content hash prevents duplicate entries
 - **Access Logging**: Every retrieval is logged for analytics and pruning
-- **Daily Logs**: Automatic daily markdown log files in `~/.mudpuppy/workspace/memory/`
+- **Daily Logs**: Automatic daily markdown log files in `~/.matrioshka-brain/workspace/memory/`
 - **File Indexing**: Auto-indexes `.md` files in the workspace directory
 
 ## Quick Start
@@ -83,8 +83,8 @@ import {
   appendToDailyLog,
   startIndexer,
   stopIndexer,
-} from 'mudpuppy';
-import { hybridSearch } from 'mudpuppy';
+} from 'matrioshka-brain';
+import { hybridSearch } from 'matrioshka-brain';
 
 // Add a memory
 const db = getMemoryDb();
@@ -112,11 +112,11 @@ const stats = getStats(db);
 
 ## Daily Logs
 
-When a new memory is added (via `memory_add`), a timestamped entry is automatically appended to `~/.mudpuppy/workspace/memory/YYYY-MM-DD.md`. This creates a chronological record of all memories added each day. Entries from the file auto-indexer (`source: 'file-index'`) are excluded to prevent feedback loops.
+When a new memory is added (via `memory_add`), a timestamped entry is automatically appended to `~/.matrioshka-brain/workspace/memory/YYYY-MM-DD.md`. This creates a chronological record of all memories added each day. Entries from the file auto-indexer (`source: 'file-index'`) are excluded to prevent feedback loops.
 
 ## File Auto-Indexing
 
-When `memory.autoIndex` is enabled in config (default: `true`), the MCP server watches `~/.mudpuppy/workspace/` for `.md` file changes and automatically indexes their content into the memory database. Features:
+When `memory.autoIndex` is enabled in config (default: `true`), the MCP server watches `~/.matrioshka-brain/workspace/` for `.md` file changes and automatically indexes their content into the memory database. Features:
 
 - Uses `fs.watch` with recursive option (falls back to polling if unavailable)
 - Content hash tracking to skip unchanged files
@@ -137,7 +137,7 @@ When `memory.autoIndex` is enabled in config (default: `true`), the MCP server w
 
 ## Security Considerations
 
-- All data stored locally in `~/.mudpuppy/data/memory.db`
+- All data stored locally in `~/.matrioshka-brain/data/memory.db`
 - Embeddings generated locally (no API calls, no data leaves the machine)
 - No encryption at rest (SQLite file is readable)
 - Content hash is SHA-256 (collision-resistant)

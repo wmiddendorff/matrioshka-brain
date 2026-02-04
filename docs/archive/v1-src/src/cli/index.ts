@@ -25,11 +25,11 @@ function getVersion(): string {
 
 function showHelp(): void {
   console.log(`
-Mudpuppy v${getVersion()} 🐾
+MatrioshkaBrain v${getVersion()} 🧠
 Security-hardened autonomous AI agent extending Claude Code
 
 Usage:
-  mudpuppy [command] [options]
+  matrioshka-brain [command] [options]
 
 Commands:
   init                  Initialize agent workspace
@@ -56,12 +56,12 @@ Options:
   --help, -h          Show this help
 
 Examples:
-  mudpuppy init
-  mudpuppy telegram set-token 123456:ABC-DEF...
-  mudpuppy telegram enable
-  mudpuppy config set telegram.enabled true
-  mudpuppy start
-  mudpuppy --version
+  matrioshka-brain init
+  matrioshka-brain telegram set-token 123456:ABC-DEF...
+  matrioshka-brain telegram enable
+  matrioshka-brain config set telegram.enabled true
+  matrioshka-brain start
+  matrioshka-brain --version
 `);
 }
 
@@ -78,7 +78,7 @@ async function main() {
 
   // Handle version flag
   if (command === '--version' || command === '-v') {
-    console.log(`mudpuppy v${getVersion()} 🐾`);
+    console.log(`matrioshka-brain v${getVersion()} 🧠`);
     process.exit(0);
   }
 
@@ -92,14 +92,14 @@ async function main() {
 
   switch (command) {
     case 'init': {
-      console.log('Initializing Mudpuppy workspace... 🐾');
+      console.log('Initializing MatrioshkaBrain workspace... 🧠');
       config.ensureWorkspace();
       config.save();
       console.log(`✓ Workspace created at: ${config.get().workspace}`);
       console.log('✓ Configuration saved');
       console.log('\nNext steps:');
       console.log('  1. Configure Telegram bot token (Phase 1)');
-      console.log('  2. Run: mudpuppy start');
+      console.log('  2. Run: matrioshka-brain start');
       break;
     }
 
@@ -154,12 +154,12 @@ async function main() {
         secrets.set('TELEGRAM_BOT_TOKEN', token);
         secrets.save();
         console.log(`✓ Telegram bot token saved to ${secrets.getPath()}`);
-        console.log('  Next: mudpuppy telegram enable');
+        console.log('  Next: matrioshka-brain telegram enable');
       } else if (subcommand === 'enable') {
         config.set('telegram.enabled', true);
         config.save();
         console.log('✓ Telegram integration enabled');
-        console.log('  Next: mudpuppy start');
+        console.log('  Next: matrioshka-brain start');
       } else if (subcommand === 'disable') {
         config.set('telegram.enabled', false);
         config.save();
@@ -178,18 +178,18 @@ async function main() {
       // Check if Telegram is enabled
       if (!config.get().telegram.enabled) {
         console.error('Error: Telegram is not enabled');
-        console.log('Run: mudpuppy telegram enable');
+        console.log('Run: matrioshka-brain telegram enable');
         process.exit(1);
       }
 
       // Check if bot token exists
       if (!secrets.has('TELEGRAM_BOT_TOKEN')) {
         console.error('Error: Telegram bot token not set');
-        console.log('Run: mudpuppy telegram set-token <token>');
+        console.log('Run: matrioshka-brain telegram set-token <token>');
         process.exit(1);
       }
 
-      console.log('Starting Mudpuppy... 🐾\n');
+      console.log('Starting MatrioshkaBrain... 🧠\n');
 
       // Create and start bot
       const bot = new TelegramBot(config, secrets);
@@ -253,7 +253,7 @@ async function main() {
     case 'status': {
       const secrets = new SecretsManager();
 
-      console.log('\n📊 Mudpuppy Status 🐾\n');
+      console.log('\n📊 MatrioshkaBrain Status 🧠\n');
       console.log(`Version: ${getVersion()}`);
       console.log(`Workspace: ${config.get().workspace}`);
       console.log(`\nTelegram:`);
@@ -277,7 +277,7 @@ async function main() {
 
     default: {
       console.error(`Error: Unknown command "${command}"`);
-      console.log('Run "mudpuppy --help" for usage information');
+      console.log('Run "matrioshka-brain --help" for usage information');
       process.exit(1);
     }
   }

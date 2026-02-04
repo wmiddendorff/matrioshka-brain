@@ -17,7 +17,7 @@ The soul module manages four bootstrap files that define the agent's personality
 
 ```bash
 # Initialize workspace (creates bootstrap files)
-mudpuppy init
+matrioshka-brain init
 
 # Read a soul file via MCP tool
 # soul_read { file: "soul" }
@@ -26,14 +26,14 @@ mudpuppy init
 # soul_propose_update { file: "soul", newContent: "...", reason: "..." }
 
 # List pending proposals
-mudpuppy soul list
+matrioshka-brain soul list
 
 # Review a proposal
-mudpuppy soul show <id>
+matrioshka-brain soul show <id>
 
 # Approve or deny
-mudpuppy soul approve <id>
-mudpuppy soul deny <id>
+matrioshka-brain soul approve <id>
+matrioshka-brain soul deny <id>
 ```
 
 ## Design Principles
@@ -79,11 +79,11 @@ mudpuppy soul deny <id>
 
 ### Workspace
 
-- `~/.mudpuppy/workspace/SOUL.md`
-- `~/.mudpuppy/workspace/IDENTITY.md`
-- `~/.mudpuppy/workspace/AGENTS.md`
-- `~/.mudpuppy/workspace/USER.md`
-- `~/.mudpuppy/data/approvals.db`
+- `~/.matrioshka-brain/workspace/SOUL.md`
+- `~/.matrioshka-brain/workspace/IDENTITY.md`
+- `~/.matrioshka-brain/workspace/AGENTS.md`
+- `~/.matrioshka-brain/workspace/USER.md`
+- `~/.matrioshka-brain/data/approvals.db`
 
 ## Related Documentation
 

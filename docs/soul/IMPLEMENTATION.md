@@ -46,7 +46,7 @@ The context parameter (default: 3) controls how many unchanged lines surround ea
 Templates are centralized in `src/soul/templates.ts`:
 
 - Single source of truth for default bootstrap file content
-- Used by both `mudpuppy init` (CLI) and `ensureBootstrapFiles()` (soul module)
+- Used by both `matrioshka-brain init` (CLI) and `ensureBootstrapFiles()` (soul module)
 - CLI's `createDefaultWorkspaceFiles()` was refactored to use these templates (DRY)
 
 ## Approval Schema
@@ -83,16 +83,16 @@ Agent calls soul_propose_update
   ├── Check: if no diff → return error
   └── createApproval() → store in DB with status 'pending'
 
-User runs: mudpuppy soul list
+User runs: matrioshka-brain soul list
   └── listPendingApprovals() → show pending items
 
-User runs: mudpuppy soul approve <id>
+User runs: matrioshka-brain soul approve <id>
   ├── getApproval() → fetch from DB
   ├── writeSoulFile() → write new content to disk
   ├── updateApprovalStatus() → mark as 'approved'
   └── appendToDailyLog() → log the event (optional)
 
-User runs: mudpuppy soul deny <id>
+User runs: matrioshka-brain soul deny <id>
   └── updateApprovalStatus() → mark as 'denied'
 ```
 

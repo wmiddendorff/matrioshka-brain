@@ -36,8 +36,8 @@ registerTool({
         reachable: false,
         error: connection.error,
         hint: !connection.daemonRunning
-          ? 'Start the daemon with: mudpuppy telegram start'
-          : 'Daemon is running but not responding. Try: mudpuppy telegram restart',
+          ? 'Start the daemon with: matrioshka-brain telegram start'
+          : 'Daemon is running but not responding. Try: matrioshka-brain telegram restart',
       };
     }
 
@@ -93,7 +93,7 @@ registerTool({
     if (!isDaemonRunning()) {
       return {
         error: 'Telegram bot daemon is not running',
-        hint: 'Start the daemon with: mudpuppy telegram start',
+        hint: 'Start the daemon with: matrioshka-brain telegram start',
         messages: [],
         total: 0,
       };
@@ -160,7 +160,7 @@ registerTool({
       return {
         success: false,
         error: 'Telegram bot daemon is not running',
-        hint: 'Start the daemon with: mudpuppy telegram start',
+        hint: 'Start the daemon with: matrioshka-brain telegram start',
       };
     }
 
@@ -214,7 +214,7 @@ registerTool({
       return {
         success: false,
         error: 'Telegram bot daemon is not running',
-        hint: 'Start the daemon with: mudpuppy telegram start',
+        hint: 'Start the daemon with: matrioshka-brain telegram start',
       };
     }
 

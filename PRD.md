@@ -1,4 +1,4 @@
-# Product Requirements Document: Mudpuppy v2
+# Product Requirements Document: Matrioshka Brain v2
 
 **Version:** 2.0
 **Date:** 2026-02-02
@@ -9,9 +9,9 @@
 
 ## Executive Summary
 
-Mudpuppy is a **security-hardened autonomous AI agent** that extends Claude Code with persistent memory, evolving personality, and controlled autonomous execution. It provides bidirectional remote control via Telegram while using your existing Claude subscription.
+Matrioshka Brain is a **security-hardened autonomous AI agent** that extends Claude Code with persistent memory, evolving personality, and controlled autonomous execution. It provides bidirectional remote control via Telegram while using your existing Claude subscription.
 
-**Key Architectural Decision (v2):** Mudpuppy is built as an **MCP server first**, exposing all capabilities as tools. The Claude Code skill becomes a thin persona/workflow layer on top, not the foundation. This provides clean separation of concerns and better portability.
+**Key Architectural Decision (v2):** Matrioshka Brain is built as an **MCP server first**, exposing all capabilities as tools. The Claude Code skill becomes a thin persona/workflow layer on top, not the foundation. This provides clean separation of concerns and better portability.
 
 ---
 
@@ -72,9 +72,9 @@ v2 (MCP-First) - NEW:
 
 ### 1. MCP Server (Foundation)
 
-The MCP server is the core of Mudpuppy. It exposes all capabilities as tools that Claude Code can invoke.
+The MCP server is the core of Matrioshka Brain. It exposes all capabilities as tools that Claude Code can invoke.
 
-**Location:** `~/.mudpuppy/mcp-server/` (or embedded in main package)
+**Location:** `~/.matrioshka-brain/mcp-server/` (or embedded in main package)
 
 **Tool Categories:**
 
@@ -90,11 +90,11 @@ The MCP server is the core of Mudpuppy. It exposes all capabilities as tools tha
 ```json
 {
   "mcpServers": {
-    "mudpuppy": {
+    "matrioshka-brain": {
       "command": "node",
-      "args": ["~/.mudpuppy/dist/mcp-server.js"],
+      "args": ["~/.matrioshka-brain/dist/mcp-server.js"],
       "env": {
-        "MUDPUPPY_HOME": "~/.mudpuppy"
+        "MATRIOSHKA_BRAIN_HOME": "~/.matrioshka-brain"
       }
     }
   }
@@ -113,7 +113,7 @@ Telegram is a **transport**, not the core. The MCP server provides tools; the Te
 └─────────────┘               └─────────────┘
 ```
 
-**Bot runs as daemon**, MCP tools communicate with it via Unix socket at `~/.mudpuppy/bot/bot.sock`.
+**Bot runs as daemon**, MCP tools communicate with it via Unix socket at `~/.matrioshka-brain/bot/bot.sock`.
 
 ### 3. Memory System
 
@@ -159,7 +159,7 @@ Thin persona wrapper that consumes MCP tools. Added last, not first.
 ## Workspace Structure
 
 ```
-~/.mudpuppy/
+~/.matrioshka-brain/
 ├── config.json              # Global configuration
 ├── secrets.env              # Secrets (gitignored, recreate on new VM)
 │
@@ -190,7 +190,7 @@ Thin persona wrapper that consumes MCP tools. Added last, not first.
 ```
 
 **Portability Notes:**
-- All paths relative to `$MUDPUPPY_HOME` (defaults to `~/.mudpuppy`)
+- All paths relative to `$MATRIOSHKA_BRAIN_HOME` (defaults to `~/.matrioshka-brain`)
 - No hardcoded absolute paths in code
 - `secrets.env` must be recreated on new machine
 - SQLite database is file-based, just copy it
@@ -614,7 +614,7 @@ CREATE INDEX idx_approvals_status ON pending_approvals(status) WHERE status = 'p
 ## Configuration
 
 ```typescript
-interface MudpuppyConfig {
+interface Matrioshka BrainConfig {
   version: string;
 
   telegram: {
@@ -707,10 +707,10 @@ interface MudpuppyConfig {
 
 **Acceptance Criteria:**
 - [ ] MCP server starts and registers with Claude Code
-- [ ] `mudpuppy init` creates workspace structure
-- [ ] `mudpuppy config get/set` works
-- [ ] Config loads from `~/.mudpuppy/config.json`
-- [ ] All paths use `$MUDPUPPY_HOME` or `~`
+- [ ] `matrioshka-brain init` creates workspace structure
+- [ ] `matrioshka-brain config get/set` works
+- [ ] Config loads from `~/.matrioshka-brain/config.json`
+- [ ] All paths use `$MATRIOSHKA_BRAIN_HOME` or `~`
 - [ ] `npm run build` succeeds
 - [ ] Basic tests pass
 
@@ -742,7 +742,7 @@ interface MudpuppyConfig {
 - Bot start/stop scripts
 
 **Acceptance Criteria:**
-- [ ] Bot starts as daemon via `mudpuppy telegram start`
+- [ ] Bot starts as daemon via `matrioshka-brain telegram start`
 - [ ] `telegram_poll` returns pending messages
 - [ ] `telegram_send` delivers messages successfully
 - [ ] `telegram_pair` triggers approval flow
@@ -886,7 +886,7 @@ interface MudpuppyConfig {
 - Performance optimization
 
 **Deliverables:**
-- `~/.claude/skills/mudpuppy/SKILL.md`
+- `~/.claude/skills/matrioshka-brain/SKILL.md`
 - `setup.sh` - New machine setup script
 - `README.md` - Complete documentation
 - `docs/` - Module documentation
@@ -913,15 +913,15 @@ interface MudpuppyConfig {
 For moving to a new VM:
 
 **Automated (via setup.sh):**
-- [ ] Create `~/.mudpuppy/` directory structure
+- [ ] Create `~/.matrioshka-brain/` directory structure
 - [ ] Install Node.js dependencies
 - [ ] Build TypeScript
 - [ ] Register MCP server with Claude Code
 - [ ] Create skill symlink
 
 **Manual:**
-- [ ] Copy `~/.mudpuppy/workspace/` (soul files, memories)
-- [ ] Copy `~/.mudpuppy/data/memory.db` (or start fresh)
+- [ ] Copy `~/.matrioshka-brain/workspace/` (soul files, memories)
+- [ ] Copy `~/.matrioshka-brain/data/memory.db` (or start fresh)
 - [ ] Create new Telegram bot token (or reuse)
 - [ ] Create `secrets.env` with tokens
 - [ ] Configure embedding API key (if using OpenAI)
@@ -929,13 +929,13 @@ For moving to a new VM:
 **Setup Script:**
 ```bash
 #!/bin/bash
-# setup.sh - Initialize Mudpuppy on a new machine
+# setup.sh - Initialize Matrioshka Brain on a new machine
 
 set -e
 
-MUDPUPPY_HOME="${MUDPUPPY_HOME:-$HOME/.mudpuppy}"
+MATRIOSHKA_BRAIN_HOME="${MATRIOSHKA_BRAIN_HOME:-$HOME/.matrioshka-brain}"
 
-echo "🐾 Setting up Mudpuppy..."
+echo "🧠 Setting up Matrioshka Brain..."
 
 # Check dependencies
 command -v node >/dev/null || { echo "❌ Node.js required"; exit 1; }
@@ -943,7 +943,7 @@ command -v npm >/dev/null || { echo "❌ npm required"; exit 1; }
 
 # Create directory structure
 echo "📁 Creating workspace..."
-mkdir -p "$MUDPUPPY_HOME"/{workspace,data,bot,tools,memory}
+mkdir -p "$MATRIOSHKA_BRAIN_HOME"/{workspace,data,bot,tools,memory}
 
 # Install dependencies
 echo "📦 Installing dependencies..."
@@ -958,7 +958,7 @@ echo "💾 Initializing database..."
 node dist/cli/index.js db:init
 
 # Create default config if not exists
-if [ ! -f "$MUDPUPPY_HOME/config.json" ]; then
+if [ ! -f "$MATRIOSHKA_BRAIN_HOME/config.json" ]; then
   echo "⚙️  Creating default config..."
   node dist/cli/index.js init
 fi
@@ -968,7 +968,7 @@ echo ""
 echo "🤖 Telegram Setup (optional)"
 read -p "Enter Telegram bot token (or press Enter to skip): " TOKEN
 if [ -n "$TOKEN" ]; then
-  echo "TELEGRAM_BOT_TOKEN=$TOKEN" >> "$MUDPUPPY_HOME/secrets.env"
+  echo "TELEGRAM_BOT_TOKEN=$TOKEN" >> "$MATRIOSHKA_BRAIN_HOME/secrets.env"
   node dist/cli/index.js config set telegram.enabled true
 fi
 
@@ -980,9 +980,9 @@ echo ""
 echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Run 'mudpuppy telegram start' to start the bot"
+echo "  1. Run 'matrioshka-brain telegram start' to start the bot"
 echo "  2. Pair your Telegram account with /start"
-echo "  3. Configure heartbeat with 'mudpuppy config set heartbeat.enabled true'"
+echo "  3. Configure heartbeat with 'matrioshka-brain config set heartbeat.enabled true'"
 echo ""
 ```
 
@@ -1002,7 +1002,7 @@ echo ""
 
 ### Audit Logging
 
-All tool invocations logged to `~/.mudpuppy/data/audit.log`:
+All tool invocations logged to `~/.matrioshka-brain/data/audit.log`:
 
 ```json
 {
@@ -1019,7 +1019,7 @@ All tool invocations logged to `~/.mudpuppy/data/audit.log`:
 
 - **Never in git**: `secrets.env`, `*.db`, `audit.log`
 - **Environment variables**: `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`
-- **No hardcoded paths**: All paths relative to `$MUDPUPPY_HOME`
+- **No hardcoded paths**: All paths relative to `$MATRIOSHKA_BRAIN_HOME`
 
 ---
 
@@ -1041,7 +1041,7 @@ If you have existing v1 setup:
 1. **Keep workspace files**: `SOUL.md`, `IDENTITY.md`, etc. are compatible
 2. **Recreate config**: v2 config structure is different
 3. **No memory migration**: v2 uses different schema, start fresh or write migration script
-4. **Remove old skill**: Delete `~/.claude/skills/mudpuppy/` and reinstall
+4. **Remove old skill**: Delete `~/.claude/skills/matrioshka-brain/` and reinstall
 
 ---
 
@@ -1049,10 +1049,10 @@ If you have existing v1 setup:
 
 ### Tool Manifest Template
 
-`~/.mudpuppy/tools/manifest.md`:
+`~/.matrioshka-brain/tools/manifest.md`:
 
 ```markdown
-# Mudpuppy Tools
+# Matrioshka Brain Tools
 
 ## Telegram
 | Tool | Purpose | Requires Approval |

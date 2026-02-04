@@ -57,7 +57,7 @@ Resume the heartbeat scheduler after being paused.
 ### Audit Module
 
 ```typescript
-import { auditLog, getRecentAuditEntries } from 'mudpuppy/audit';
+import { auditLog, getRecentAuditEntries } from 'matrioshka-brain/audit';
 ```
 
 #### `auditLog(entry: AuditEntry): void`
@@ -103,7 +103,7 @@ interface AuditEntry {
 ### Parser Module
 
 ```typescript
-import { parseHeartbeatMd, markTaskDone } from 'mudpuppy/autonomy';
+import { parseHeartbeatMd, markTaskDone } from 'matrioshka-brain/autonomy';
 ```
 
 #### `parseHeartbeatMd(content: string): HeartbeatTask[]`
@@ -130,7 +130,7 @@ const updated = markTaskDone(content, 1);
 ### Scheduler Module
 
 ```typescript
-import { HeartbeatScheduler, getScheduler, isInActiveHours } from 'mudpuppy/autonomy';
+import { HeartbeatScheduler, getScheduler, isInActiveHours } from 'matrioshka-brain/autonomy';
 ```
 
 #### `new HeartbeatScheduler(options: HeartbeatOptions)`
@@ -224,7 +224,7 @@ interface HeartbeatOptions {
 
 ## CLI Commands
 
-### `mudpuppy heartbeat status`
+### `matrioshka-brain heartbeat status`
 
 Show heartbeat configuration and pending task count.
 
@@ -238,10 +238,10 @@ Active Hours: 09:00 - 22:00 (America/New_York)
 Pending tasks: 3 (2 executable, 1 manual)
 ```
 
-### `mudpuppy heartbeat pause`
+### `matrioshka-brain heartbeat pause`
 
 Show instructions for pausing via MCP tool (scheduler runs in MCP server process).
 
-### `mudpuppy heartbeat resume`
+### `matrioshka-brain heartbeat resume`
 
 Show instructions for resuming via MCP tool.

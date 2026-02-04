@@ -634,7 +634,7 @@ async function startBot(): Promise<void> {
     // Create pairing request
     createPairingRequest(db, userId, username, firstName);
     await ctx.reply(
-      '🐾 Welcome to Mudpuppy!\n\n' +
+      '🧠 Welcome to Matrioshka Brain!\n\n' +
         'A pairing request has been created. ' +
         'The owner will need to approve it before you can send messages.\n\n' +
         'You will be notified when your request is processed.'
@@ -644,7 +644,7 @@ async function startBot(): Promise<void> {
   // /help command
   bot.command('help', async (ctx: Context) => {
     await ctx.reply(
-      '🐾 <b>Mudpuppy Bot</b>\n\n' +
+      '🧠 <b>Matrioshka Brain Bot</b>\n\n' +
         '<b>Commands:</b>\n' +
         '/start - Request pairing\n' +
         '/help - Show this message\n' +
@@ -741,7 +741,7 @@ async function startBot(): Promise<void> {
 // ============================================
 
 // Only run if this is the main module and we're running as daemon
-if (process.env.MUDPUPPY_DAEMON === '1') {
+if (process.env.MATRIOSHKA_BRAIN_DAEMON === '1') {
   startBot().catch((error) => {
     console.error('Failed to start bot:', error);
     process.exit(1);

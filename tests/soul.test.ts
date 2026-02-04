@@ -55,7 +55,7 @@ describe('Soul Templates', () => {
     const { getDefaultTemplate } = await import('../src/soul/templates.js');
     const template = getDefaultTemplate('identity');
     expect(template).toContain('# Identity');
-    expect(template).toContain('Mudpuppy');
+    expect(template).toContain('Matrioshka Brain');
   });
 
   it('agents template contains safety rules', async () => {
@@ -151,16 +151,16 @@ describe('Soul Files', () => {
   let originalEnv: string | undefined;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'mudpuppy-soul-test-'));
-    originalEnv = process.env.MUDPUPPY_HOME;
-    process.env.MUDPUPPY_HOME = tempDir;
+    tempDir = mkdtempSync(join(tmpdir(), 'matrioshka-brain-soul-test-'));
+    originalEnv = process.env.MATRIOSHKA_BRAIN_HOME;
+    process.env.MATRIOSHKA_BRAIN_HOME = tempDir;
   });
 
   afterEach(() => {
     if (originalEnv !== undefined) {
-      process.env.MUDPUPPY_HOME = originalEnv;
+      process.env.MATRIOSHKA_BRAIN_HOME = originalEnv;
     } else {
-      delete process.env.MUDPUPPY_HOME;
+      delete process.env.MATRIOSHKA_BRAIN_HOME;
     }
     rmSync(tempDir, { recursive: true, force: true });
   });
@@ -411,9 +411,9 @@ describe('Integration: Soul Proposal Flow', () => {
   let db: Database.Database;
 
   beforeEach(async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'mudpuppy-soul-int-'));
-    originalEnv = process.env.MUDPUPPY_HOME;
-    process.env.MUDPUPPY_HOME = tempDir;
+    tempDir = mkdtempSync(join(tmpdir(), 'matrioshka-brain-soul-int-'));
+    originalEnv = process.env.MATRIOSHKA_BRAIN_HOME;
+    process.env.MATRIOSHKA_BRAIN_HOME = tempDir;
 
     // Set up approval DB in memory
     db = new Database(':memory:');
@@ -427,9 +427,9 @@ describe('Integration: Soul Proposal Flow', () => {
     closeApprovalDb();
 
     if (originalEnv !== undefined) {
-      process.env.MUDPUPPY_HOME = originalEnv;
+      process.env.MATRIOSHKA_BRAIN_HOME = originalEnv;
     } else {
-      delete process.env.MUDPUPPY_HOME;
+      delete process.env.MATRIOSHKA_BRAIN_HOME;
     }
     rmSync(tempDir, { recursive: true, force: true });
   });

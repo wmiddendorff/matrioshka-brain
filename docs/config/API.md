@@ -2,12 +2,12 @@
 
 ## CLI Commands
 
-### `mudpuppy config get`
+### `matrioshka-brain config get`
 
 Display the current configuration in JSON format.
 
 ```bash
-mudpuppy config get
+matrioshka-brain config get
 
 # Output:
 # {
@@ -17,7 +17,7 @@ mudpuppy config get
 # }
 ```
 
-### `mudpuppy config set <key> <value>`
+### `matrioshka-brain config set <key> <value>`
 
 Set a configuration value using dot notation.
 
@@ -29,16 +29,16 @@ Set a configuration value using dot notation.
 
 ```bash
 # Set number
-mudpuppy config set heartbeat.interval 60000
+matrioshka-brain config set heartbeat.interval 60000
 
 # Set boolean
-mudpuppy config set telegram.enabled true
+matrioshka-brain config set telegram.enabled true
 
 # Set string
-mudpuppy config set memory.embeddingProvider openai
+matrioshka-brain config set memory.embeddingProvider openai
 
 # Set object (JSON)
-mudpuppy config set heartbeat.activeHours '{"start":"09:00","end":"17:00","timezone":"America/Los_Angeles"}'
+matrioshka-brain config set heartbeat.activeHours '{"start":"09:00","end":"17:00","timezone":"America/Los_Angeles"}'
 ```
 
 **Value Parsing Rules:**
@@ -49,29 +49,29 @@ mudpuppy config set heartbeat.activeHours '{"start":"09:00","end":"17:00","timez
 - `'{"key":"value"}'` → `{key: "value"}` (JSON object)
 - `'[1,2,3]'` → `[1,2,3]` (JSON array)
 
-### `mudpuppy init`
+### `matrioshka-brain init`
 
 Initialize the workspace and create default configuration.
 
 ```bash
-mudpuppy init
+matrioshka-brain init
 
 # Output:
-# Initializing Mudpuppy workspace...
-# Created: /home/user/.mudpuppy
-# Created: /home/user/.mudpuppy/workspace
+# Initializing Matrioshka Brain workspace...
+# Created: /home/user/.matrioshka-brain
+# Created: /home/user/.matrioshka-brain/workspace
 # ...
 ```
 
 Creates:
-- `~/.mudpuppy/` directory
-- `~/.mudpuppy/config.json` with defaults
-- `~/.mudpuppy/workspace/` - Soul/identity files
-- `~/.mudpuppy/workspace/memory/` - Daily logs
-- `~/.mudpuppy/data/` - Database and sessions
-- `~/.mudpuppy/data/sessions/` - Session transcripts
-- `~/.mudpuppy/bot/` - Telegram bot daemon
-- `~/.mudpuppy/tools/` - Tool documentation
+- `~/.matrioshka-brain/` directory
+- `~/.matrioshka-brain/config.json` with defaults
+- `~/.matrioshka-brain/workspace/` - Soul/identity files
+- `~/.matrioshka-brain/workspace/memory/` - Daily logs
+- `~/.matrioshka-brain/data/` - Database and sessions
+- `~/.matrioshka-brain/data/sessions/` - Session transcripts
+- `~/.matrioshka-brain/bot/` - Telegram bot daemon
+- `~/.matrioshka-brain/tools/` - Tool documentation
 
 ## Programmatic API
 
@@ -82,19 +82,19 @@ Main configuration management class.
 #### Constructor
 
 ```typescript
-import { ConfigManager } from 'mudpuppy';
+import { ConfigManager } from 'matrioshka-brain';
 
 const config = new ConfigManager();
 ```
 
 **Behavior:**
-- Loads config from `~/.mudpuppy/config.json` (or `$MUDPUPPY_HOME/config.json`)
+- Loads config from `~/.matrioshka-brain/config.json` (or `$MATRIOSHKA_BRAIN_HOME/config.json`)
 - Creates default config if file doesn't exist
 - Merges loaded config with defaults (handles missing fields)
 
 #### Methods
 
-##### `get(): MudpuppyConfig`
+##### `get(): Matrioshka BrainConfig`
 
 Returns the entire configuration object.
 
@@ -130,7 +130,7 @@ Saves the configuration to disk.
 
 ```typescript
 config.setValue('heartbeat.enabled', true);
-config.save();  // Writes to ~/.mudpuppy/config.json
+config.save();  // Writes to ~/.matrioshka-brain/config.json
 ```
 
 **Throws:** Error if unable to write file.
@@ -150,34 +150,34 @@ Returns the path to the config file.
 
 ```typescript
 const path = config.getConfigPath();
-// → /home/user/.mudpuppy/config.json
+// → /home/user/.matrioshka-brain/config.json
 ```
 
 ### Utility Functions
 
-##### `getMudpuppyHome(): string`
+##### `getMatrioshka BrainHome(): string`
 
-Returns the Mudpuppy home directory.
+Returns the Matrioshka Brain home directory.
 
 ```typescript
-import { getMudpuppyHome } from 'mudpuppy';
+import { getMatrioshka BrainHome } from 'matrioshka-brain';
 
-const home = getMudpuppyHome();
-// Uses $MUDPUPPY_HOME or defaults to ~/.mudpuppy
+const home = getMatrioshka BrainHome();
+// Uses $MATRIOSHKA_BRAIN_HOME or defaults to ~/.matrioshka-brain
 ```
 
 ##### `resolvePath(relativePath: string): string`
 
-Resolves a path relative to MUDPUPPY_HOME.
+Resolves a path relative to MATRIOSHKA_BRAIN_HOME.
 
 ```typescript
-import { resolvePath } from 'mudpuppy';
+import { resolvePath } from 'matrioshka-brain';
 
 const configPath = resolvePath('config.json');
-// → /home/user/.mudpuppy/config.json
+// → /home/user/.matrioshka-brain/config.json
 
 const memoryPath = resolvePath('workspace/memory');
-// → /home/user/.mudpuppy/workspace/memory
+// → /home/user/.matrioshka-brain/workspace/memory
 ```
 
 ##### `initWorkspace(): { created: string[]; existed: string[] }`
@@ -185,7 +185,7 @@ const memoryPath = resolvePath('workspace/memory');
 Initializes the workspace directory structure.
 
 ```typescript
-import { initWorkspace } from 'mudpuppy';
+import { initWorkspace } from 'matrioshka-brain';
 
 const result = initWorkspace();
 console.log('Created:', result.created);
@@ -197,19 +197,19 @@ console.log('Already existed:', result.existed);
 Checks if the workspace has been initialized.
 
 ```typescript
-import { isWorkspaceInitialized } from 'mudpuppy';
+import { isWorkspaceInitialized } from 'matrioshka-brain';
 
 if (!isWorkspaceInitialized()) {
-  console.log('Run: mudpuppy init');
+  console.log('Run: matrioshka-brain init');
 }
 ```
 
 ## TypeScript Types
 
-### `MudpuppyConfig`
+### `Matrioshka BrainConfig`
 
 ```typescript
-interface MudpuppyConfig {
+interface Matrioshka BrainConfig {
   version: string;
   telegram: TelegramConfig;
   memory: MemoryConfig;
@@ -227,7 +227,7 @@ interface TelegramConfig {
 }
 ```
 
-Note: Bot token is stored in `~/.mudpuppy/secrets.env`, not in config.
+Note: Bot token is stored in `~/.matrioshka-brain/secrets.env`, not in config.
 
 ### `MemoryConfig`
 
@@ -335,21 +335,21 @@ Set a configuration value.
 ### Enable Telegram with Custom Interval
 
 ```bash
-mudpuppy config set telegram.enabled true
-mudpuppy config set heartbeat.enabled true
-mudpuppy config set heartbeat.interval 3600000  # 1 hour
+matrioshka-brain config set telegram.enabled true
+matrioshka-brain config set heartbeat.enabled true
+matrioshka-brain config set heartbeat.interval 3600000  # 1 hour
 ```
 
 ### Set Active Hours
 
 ```bash
-mudpuppy config set heartbeat.activeHours '{"start":"09:00","end":"23:00","timezone":"America/Los_Angeles"}'
+matrioshka-brain config set heartbeat.activeHours '{"start":"09:00","end":"23:00","timezone":"America/Los_Angeles"}'
 ```
 
 ### Programmatic Configuration
 
 ```typescript
-import { ConfigManager } from 'mudpuppy';
+import { ConfigManager } from 'matrioshka-brain';
 
 const config = new ConfigManager();
 

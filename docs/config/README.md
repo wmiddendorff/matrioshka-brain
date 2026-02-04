@@ -1,10 +1,10 @@
 # Configuration System
 
-The configuration system manages all settings for Mudpuppy, providing a centralized JSON-based configuration with type safety and validation.
+The configuration system manages all settings for Matrioshka Brain, providing a centralized JSON-based configuration with type safety and validation.
 
 ## Overview
 
-- **Location**: `~/.mudpuppy/config.json`
+- **Location**: `~/.matrioshka-brain/config.json`
 - **Format**: JSON with TypeScript types
 - **Scope**: Global settings for all features
 - **Management**: Via CLI or programmatic API
@@ -13,19 +13,19 @@ The configuration system manages all settings for Mudpuppy, providing a centrali
 
 ```bash
 # Initialize workspace and create default config
-mudpuppy init
+matrioshka-brain init
 
 # View current configuration
-mudpuppy config get
+matrioshka-brain config get
 
 # Set a configuration value
-mudpuppy config set heartbeat.interval 60000
+matrioshka-brain config set heartbeat.interval 60000
 
 # Set boolean value
-mudpuppy config set telegram.enabled true
+matrioshka-brain config set telegram.enabled true
 
 # Set array value (JSON)
-mudpuppy config set telegram.pairedUsers '[123456,789012]'
+matrioshka-brain config set telegram.pairedUsers '[123456,789012]'
 ```
 
 ## Configuration Structure
@@ -33,7 +33,7 @@ mudpuppy config set telegram.pairedUsers '[123456,789012]'
 ```typescript
 interface Config {
   version: string;
-  workspace: string;  // Default: ~/.mudpuppy
+  workspace: string;  // Default: ~/.matrioshka-brain
 
   heartbeat: {
     enabled: boolean;
@@ -76,7 +76,7 @@ All features are **disabled by default** (opt-in security model):
 ```json
 {
   "version": "0.1.0",
-  "workspace": "~/.mudpuppy",
+  "workspace": "~/.matrioshka-brain",
   "heartbeat": {
     "enabled": false,
     "interval": 1800000,
@@ -105,7 +105,7 @@ All features are **disabled by default** (opt-in security model):
 ## Programmatic Usage
 
 ```typescript
-import { ConfigManager } from 'mudpuppy';
+import { ConfigManager } from 'matrioshka-brain';
 
 const config = new ConfigManager();
 
@@ -127,11 +127,11 @@ config.ensureWorkspace();
 
 ## File Locations
 
-- **Config**: `~/.mudpuppy/config.json`
-- **Workspace**: `~/.mudpuppy/`
-- **Memory**: `~/.mudpuppy/memory/`
-- **Sessions**: `~/.mudpuppy/agents/default/sessions/`
-- **Secrets**: `~/.mudpuppy/secrets.env` (gitignored)
+- **Config**: `~/.matrioshka-brain/config.json`
+- **Workspace**: `~/.matrioshka-brain/`
+- **Memory**: `~/.matrioshka-brain/memory/`
+- **Sessions**: `~/.matrioshka-brain/agents/default/sessions/`
+- **Secrets**: `~/.matrioshka-brain/secrets.env` (gitignored)
 
 ## Security Considerations
 

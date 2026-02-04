@@ -21,9 +21,9 @@ Focus on ConfigManager methods in isolation:
 
 Test CLI commands end-to-end:
 
-1. **`mudpuppy init`** - Creates workspace and config
-2. **`mudpuppy config get`** - Displays current config
-3. **`mudpuppy config set`** - Updates and persists changes
+1. **`matrioshka-brain init`** - Creates workspace and config
+2. **`matrioshka-brain config get`** - Displays current config
+3. **`matrioshka-brain config set`** - Updates and persists changes
 
 ### Edge Cases
 
@@ -101,7 +101,7 @@ it('should handle nested config paths', () => {
 Each test uses a separate workspace to avoid conflicts:
 
 ```typescript
-const testWorkspace = join(homedir(), '.mudpuppy-test');
+const testWorkspace = join(homedir(), '.matrioshka-brain-test');
 
 beforeEach(() => {
   // Clean up test workspace before each test
@@ -122,17 +122,17 @@ afterEach(() => {
 
 ### First Run Experience
 
-- [ ] Run `mudpuppy init` in clean environment
-- [ ] Verify `~/.mudpuppy/` created
+- [ ] Run `matrioshka-brain init` in clean environment
+- [ ] Verify `~/.matrioshka-brain/` created
 - [ ] Verify `config.json` has correct defaults
 - [ ] Verify subdirectories created
 
 ### Config Get/Set
 
-- [ ] `mudpuppy config get` displays JSON
-- [ ] `mudpuppy config set heartbeat.enabled true` works
-- [ ] `mudpuppy config set heartbeat.interval 60000` works
-- [ ] `mudpuppy config set telegram.pairedUsers '[123,456]'` works
+- [ ] `matrioshka-brain config get` displays JSON
+- [ ] `matrioshka-brain config set heartbeat.enabled true` works
+- [ ] `matrioshka-brain config set heartbeat.interval 60000` works
+- [ ] `matrioshka-brain config set telegram.pairedUsers '[123,456]'` works
 - [ ] Changes persist after CLI exit
 - [ ] Manual edits to config.json are respected
 
@@ -157,14 +157,14 @@ afterEach(() => {
 ### Load Time
 
 ```bash
-time mudpuppy config get
+time matrioshka-brain config get
 # Should be <100ms
 ```
 
 ### Save Time
 
 ```bash
-time mudpuppy config set heartbeat.interval 60000
+time matrioshka-brain config set heartbeat.interval 60000
 # Should be <100ms
 ```
 

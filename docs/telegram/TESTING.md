@@ -103,8 +103,8 @@ The bot daemon (`bot.ts`) is tightly coupled to grammY and SQLite. Mocking gramm
 Tests use a unique temporary directory per run:
 
 ```typescript
-const TEST_HOME = join(tmpdir(), `mudpuppy-test-telegram-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-process.env.MUDPUPPY_HOME = TEST_HOME;
+const TEST_HOME = join(tmpdir(), `matrioshka-brain-test-telegram-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+process.env.MATRIOSHKA_BRAIN_HOME = TEST_HOME;
 ```
 
 Each test group cleans up with `rmSync(TEST_HOME, { recursive: true })` in `afterEach`.
@@ -113,10 +113,10 @@ Each test group cleans up with `rmSync(TEST_HOME, { recursive: true })` in `afte
 
 ### Bot Daemon
 
-- [ ] `mudpuppy telegram start` starts daemon, prints PID
-- [ ] `mudpuppy telegram status` shows running status
-- [ ] `mudpuppy telegram stop` stops daemon cleanly
-- [ ] `mudpuppy telegram restart` cycles the daemon
+- [ ] `matrioshka-brain telegram start` starts daemon, prints PID
+- [ ] `matrioshka-brain telegram status` shows running status
+- [ ] `matrioshka-brain telegram stop` stops daemon cleanly
+- [ ] `matrioshka-brain telegram restart` cycles the daemon
 - [ ] Stale PID file detected and cleaned up
 - [ ] Missing bot token produces clear error
 

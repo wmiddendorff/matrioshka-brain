@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Mudpuppy Telegram Bot - Standalone Process
+ * MatrioshkaBrain Telegram Bot - Standalone Process
  *
  * Runs independently and communicates via file queues:
- * - Writes incoming messages to ~/.mudpuppy/telegram-queue.jsonl
- * - Reads outgoing responses from ~/.mudpuppy/telegram-responses.jsonl
+ * - Writes incoming messages to ~/.matrioshka-brain/telegram-queue.jsonl
+ * - Reads outgoing responses from ~/.matrioshka-brain/telegram-responses.jsonl
  * - Handles pairing, commands, and message routing
  */
 
@@ -18,7 +18,7 @@ import { homedir } from 'os';
 const config = new ConfigManager();
 const secrets = new SecretsManager();
 
-const QUEUE_DIR = join(homedir(), '.mudpuppy');
+const QUEUE_DIR = join(homedir(), '.matrioshka-brain');
 const INCOMING_QUEUE = join(QUEUE_DIR, 'telegram-queue.jsonl');
 const OUTGOING_QUEUE = join(QUEUE_DIR, 'telegram-responses.jsonl');
 const PAIRING_QUEUE = join(QUEUE_DIR, 'telegram-pairing-requests.jsonl');
@@ -40,7 +40,7 @@ const bot = new Bot(token);
 // Track processed messages
 const processedResponses = new Set<string>();
 
-console.log('🤖 Starting Mudpuppy Telegram Bot (Standalone)...');
+console.log('🤖 Starting MatrioshkaBrain Telegram Bot (Standalone)...');
 
 // Handle /start command - pairing
 bot.command('start', async (ctx) => {
@@ -55,7 +55,7 @@ bot.command('start', async (ctx) => {
   // Check if already paired
   const pairedUsers = config.get().telegram.pairedUsers;
   if (pairedUsers.includes(userId)) {
-    await ctx.reply('✅ You are already paired with Mudpuppy!');
+    await ctx.reply('✅ You are already paired with MatrioshkaBrain!');
     return;
   }
 
@@ -85,7 +85,7 @@ bot.command('status', async (ctx) => {
   const minutes = Math.floor((uptime % 3600) / 60);
 
   await ctx.reply(
-    `🤖 <b>Mudpuppy Status</b>\n\n` +
+    `🤖 <b>MatrioshkaBrain Status</b>\n\n` +
     `✅ Bot Online\n` +
     `⏱ Uptime: ${hours}h ${minutes}m\n` +
     `👥 Paired users: ${config.get().telegram.pairedUsers.length}`,
@@ -96,8 +96,8 @@ bot.command('status', async (ctx) => {
 // Handle /help command
 bot.command('help', async (ctx) => {
   await ctx.reply(
-    `<b>Mudpuppy Commands:</b>\n\n` +
-    `/start - Pair with Mudpuppy\n` +
+    `<b>MatrioshkaBrain Commands:</b>\n\n` +
+    `/start - Pair with MatrioshkaBrain\n` +
     `/status - Check bot status\n` +
     `/help - Show this help\n\n` +
     `Send any message to chat with Claude!`,
@@ -194,7 +194,7 @@ function watchOutgoingQueue() {
 // Start bot
 bot.start({
   onStart: (botInfo) => {
-    console.log(`✅ Mudpuppy bot started: @${botInfo.username}`);
+    console.log(`✅ MatrioshkaBrain bot started: @${botInfo.username}`);
     console.log(`📝 Incoming queue: ${INCOMING_QUEUE}`);
     console.log(`📤 Outgoing queue: ${OUTGOING_QUEUE}`);
     watchOutgoingQueue();
@@ -203,7 +203,7 @@ bot.start({
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down Mudpuppy bot...');
+  console.log('\n🛑 Shutting down MatrioshkaBrain bot...');
   await bot.stop();
   process.exit(0);
 });

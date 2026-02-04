@@ -236,16 +236,16 @@ describe('Audit Logger', () => {
   let originalEnv: string | undefined;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'mudpuppy-audit-test-'));
-    originalEnv = process.env.MUDPUPPY_HOME;
-    process.env.MUDPUPPY_HOME = tempDir;
+    tempDir = mkdtempSync(join(tmpdir(), 'matrioshka-brain-audit-test-'));
+    originalEnv = process.env.MATRIOSHKA_BRAIN_HOME;
+    process.env.MATRIOSHKA_BRAIN_HOME = tempDir;
   });
 
   afterEach(() => {
     if (originalEnv !== undefined) {
-      process.env.MUDPUPPY_HOME = originalEnv;
+      process.env.MATRIOSHKA_BRAIN_HOME = originalEnv;
     } else {
-      delete process.env.MUDPUPPY_HOME;
+      delete process.env.MATRIOSHKA_BRAIN_HOME;
     }
     rmSync(tempDir, { recursive: true, force: true });
   });
@@ -342,9 +342,9 @@ describe('HeartbeatScheduler', () => {
   let originalEnv: string | undefined;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'mudpuppy-sched-test-'));
-    originalEnv = process.env.MUDPUPPY_HOME;
-    process.env.MUDPUPPY_HOME = tempDir;
+    tempDir = mkdtempSync(join(tmpdir(), 'matrioshka-brain-sched-test-'));
+    originalEnv = process.env.MATRIOSHKA_BRAIN_HOME;
+    process.env.MATRIOSHKA_BRAIN_HOME = tempDir;
 
     // Create workspace directory with a HEARTBEAT.md
     mkdirSync(join(tempDir, 'workspace'), { recursive: true });
@@ -353,9 +353,9 @@ describe('HeartbeatScheduler', () => {
 
   afterEach(() => {
     if (originalEnv !== undefined) {
-      process.env.MUDPUPPY_HOME = originalEnv;
+      process.env.MATRIOSHKA_BRAIN_HOME = originalEnv;
     } else {
-      delete process.env.MUDPUPPY_HOME;
+      delete process.env.MATRIOSHKA_BRAIN_HOME;
     }
     rmSync(tempDir, { recursive: true, force: true });
   });
@@ -660,18 +660,18 @@ describe('Integration: Full Heartbeat Cycle', () => {
   let originalEnv: string | undefined;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'mudpuppy-int-test-'));
-    originalEnv = process.env.MUDPUPPY_HOME;
-    process.env.MUDPUPPY_HOME = tempDir;
+    tempDir = mkdtempSync(join(tmpdir(), 'matrioshka-brain-int-test-'));
+    originalEnv = process.env.MATRIOSHKA_BRAIN_HOME;
+    process.env.MATRIOSHKA_BRAIN_HOME = tempDir;
     mkdirSync(join(tempDir, 'workspace'), { recursive: true });
     mkdirSync(join(tempDir, 'data'), { recursive: true });
   });
 
   afterEach(() => {
     if (originalEnv !== undefined) {
-      process.env.MUDPUPPY_HOME = originalEnv;
+      process.env.MATRIOSHKA_BRAIN_HOME = originalEnv;
     } else {
-      delete process.env.MUDPUPPY_HOME;
+      delete process.env.MATRIOSHKA_BRAIN_HOME;
     }
     rmSync(tempDir, { recursive: true, force: true });
   });

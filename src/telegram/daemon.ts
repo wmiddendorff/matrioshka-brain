@@ -171,7 +171,7 @@ export async function startDaemon(): Promise<number> {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      MUDPUPPY_DAEMON: '1',
+      MATRIOSHKA_BRAIN_DAEMON: '1',
     },
   });
 

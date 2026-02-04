@@ -38,7 +38,7 @@ registerTool({
         inActiveHours: isInActiveHours(config.getValue('heartbeat.activeHours')),
         message: enabled
           ? 'Heartbeat is enabled in config but scheduler is not running. Restart the MCP server.'
-          : 'Heartbeat is disabled. Enable with: mudpuppy config set heartbeat.enabled true',
+          : 'Heartbeat is disabled. Enable with: matrioshka-brain config set heartbeat.enabled true',
       };
     }
 

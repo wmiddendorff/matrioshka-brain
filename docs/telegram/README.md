@@ -4,7 +4,7 @@
 
 ## Overview
 
-Telegram integration enables remote interaction with the Mudpuppy agent through Telegram's Bot API. The architecture uses a background daemon process that communicates with MCP tools over Unix socket IPC.
+Telegram integration enables remote interaction with the Matrioshka Brain agent through Telegram's Bot API. The architecture uses a background daemon process that communicates with MCP tools over Unix socket IPC.
 
 - **Library**: grammY (modern Telegram Bot API framework)
 - **Architecture**: MCP tools + daemon process + SQLite queue
@@ -32,7 +32,7 @@ Telegram integration enables remote interaction with the Mudpuppy agent through 
 ### Components
 
 1. **Bot Daemon** (`src/telegram/bot.ts`)
-   - Long-running background process started via `mudpuppy telegram start`
+   - Long-running background process started via `matrioshka-brain telegram start`
    - Connects to Telegram API via grammY
    - Queues incoming messages to SQLite
    - Serves IPC requests over Unix socket
@@ -65,13 +65,13 @@ Telegram integration enables remote interaction with the Mudpuppy agent through 
 
 ```bash
 # 1. Initialize workspace
-mudpuppy init
+matrioshka-brain init
 
 # 2. Set bot token (stored in secrets.env)
-mudpuppy telegram set-token <your-bot-token>
+matrioshka-brain telegram set-token <your-bot-token>
 
 # 3. Start the daemon
-mudpuppy telegram start
+matrioshka-brain telegram start
 
 # 4. Have a user send /start to your bot on Telegram
 
@@ -83,20 +83,20 @@ mudpuppy telegram start
 # telegram_poll {}
 
 # 7. Send a reply
-# telegram_send { userId: 12345, text: "Hello from Mudpuppy!" }
+# telegram_send { userId: 12345, text: "Hello from Matrioshka Brain!" }
 ```
 
 ## CLI Commands
 
 ```bash
 # Bot management
-mudpuppy telegram start       # Start bot daemon
-mudpuppy telegram stop        # Stop bot daemon
-mudpuppy telegram restart     # Restart bot daemon
-mudpuppy telegram status      # Show bot status
+matrioshka-brain telegram start       # Start bot daemon
+matrioshka-brain telegram stop        # Stop bot daemon
+matrioshka-brain telegram restart     # Restart bot daemon
+matrioshka-brain telegram status      # Show bot status
 
 # Configuration
-mudpuppy telegram set-token <token>  # Set bot token (stored in secrets.env)
+matrioshka-brain telegram set-token <token>  # Set bot token (stored in secrets.env)
 ```
 
 ## Security
@@ -112,7 +112,7 @@ mudpuppy telegram set-token <token>  # Set bot token (stored in secrets.env)
 
 ### Token Storage
 
-Bot token stored in `~/.mudpuppy/secrets.env`:
+Bot token stored in `~/.matrioshka-brain/secrets.env`:
 
 ```env
 TELEGRAM_BOT_TOKEN=123456789:ABC-DEFgh...
@@ -122,7 +122,7 @@ This file is never committed to git and is readable only by the owner.
 
 ## Database
 
-All Telegram state stored in `~/.mudpuppy/data/telegram.db` (SQLite with WAL mode):
+All Telegram state stored in `~/.matrioshka-brain/data/telegram.db` (SQLite with WAL mode):
 
 - `telegram_users` — Paired users with message counts
 - `telegram_messages` — Message queue with read/unread tracking
@@ -131,7 +131,7 @@ All Telegram state stored in `~/.mudpuppy/data/telegram.db` (SQLite with WAL mod
 ## File Locations
 
 ```
-~/.mudpuppy/
+~/.matrioshka-brain/
 ├── bot/
 │   ├── telegram.pid      # Daemon PID file
 │   ├── telegram.sock     # Unix socket for IPC

@@ -11,8 +11,8 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 // Create test directory before importing modules
-const TEST_HOME = join(tmpdir(), `mudpuppy-test-telegram-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-process.env.MUDPUPPY_HOME = TEST_HOME;
+const TEST_HOME = join(tmpdir(), `matrioshka-brain-test-telegram-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+process.env.MATRIOSHKA_BRAIN_HOME = TEST_HOME;
 
 // Import modules after setting env
 import { SecretsManager, getSecret, setSecret } from '../src/secrets.js';

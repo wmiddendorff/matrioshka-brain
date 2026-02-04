@@ -7,14 +7,14 @@ The configuration system is intentionally simple and file-based:
 ```
 ConfigManager
     ↓
-~/.mudpuppy/config.json (JSON file)
+~/.matrioshka-brain/config.json (JSON file)
     ↓
 DEFAULT_CONFIG (fallback)
 ```
 
 ## File Format
 
-**Location**: `~/.mudpuppy/config.json`
+**Location**: `~/.matrioshka-brain/config.json`
 **Format**: JSON (pretty-printed with 2-space indent)
 **Encoding**: UTF-8
 
@@ -68,7 +68,7 @@ Example:
 ### Why Home Directory?
 
 - **User-scoped**: Each user has their own config
-- **Predictable**: `~/.mudpuppy/` is standard Unix convention
+- **Predictable**: `~/.matrioshka-brain/` is standard Unix convention
 - **Portable**: Works across different project directories
 - **Persistent**: Not tied to project location
 
@@ -76,13 +76,13 @@ Example:
 
 ### Loading Sequence
 
-1. Check if config file exists at `$MUDPUPPY_HOME/config.json` or `~/.mudpuppy/config.json`
+1. Check if config file exists at `$MATRIOSHKA_BRAIN_HOME/config.json` or `~/.matrioshka-brain/config.json`
 2. If exists: Read and parse JSON
 3. Merge with `DEFAULT_CONFIG` using deep merge (handles missing fields from old versions)
 4. If doesn't exist or parse fails: Use `DEFAULT_CONFIG`
 
 ```typescript
-private load(): MudpuppyConfig {
+private load(): Matrioshka BrainConfig {
   if (existsSync(this.configPath)) {
     try {
       const content = readFileSync(this.configPath, 'utf-8');
@@ -96,7 +96,7 @@ private load(): MudpuppyConfig {
   return { ...DEFAULT_CONFIG };
 }
 
-private mergeWithDefaults(loaded: Partial<MudpuppyConfig>): MudpuppyConfig {
+private mergeWithDefaults(loaded: Partial<Matrioshka BrainConfig>): Matrioshka BrainConfig {
   return {
     ...DEFAULT_CONFIG,
     ...loaded,
@@ -151,11 +151,11 @@ public setValue(path: string, value: unknown): void {
 Atomicity is not guaranteed (no temp file + rename). This is acceptable because:
 - Config changes are infrequent
 - Corruption risk is low
-- Manual recovery is easy (delete config.json, run `mudpuppy init`)
+- Manual recovery is easy (delete config.json, run `matrioshka-brain init`)
 
 ```typescript
 save(): void {
-  const dir = getMudpuppyHome();
+  const dir = getMatrioshka BrainHome();
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
@@ -169,7 +169,7 @@ The `initWorkspace()` function creates the directory structure:
 
 ```typescript
 export function initWorkspace(): { created: string[]; existed: string[] } {
-  const home = getMudpuppyHome();
+  const home = getMatrioshka BrainHome();
   const dirs = [
     '',                    // root
     'workspace',           // soul/identity files
@@ -255,12 +255,12 @@ const DEFAULT_CONFIG = {
 
 ```bash
 # If config.json is corrupted:
-$ mudpuppy config get
-Failed to load config from ~/.mudpuppy/config.json, using defaults: ...
+$ matrioshka-brain config get
+Failed to load config from ~/.matrioshka-brain/config.json, using defaults: ...
 { ... DEFAULT_CONFIG ... }
 
 # User can fix by re-initializing:
-$ mudpuppy init
+$ matrioshka-brain init
 ✓ Configuration saved
 ```
 

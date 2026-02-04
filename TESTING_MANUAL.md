@@ -7,7 +7,7 @@ This guide will walk you through testing the Telegram bot integration end-to-end
 1. **Create a Telegram Bot**
    - Open Telegram and search for `@BotFather`
    - Send `/newbot` and follow the prompts
-   - Choose a name (e.g., "Mudpuppy Test")
+   - Choose a name (e.g., "Matrioshka Brain Test")
    - Choose a username (e.g., "openclaw_clone_test_bot")
    - **Save the bot token** (looks like: `123456789:ABC-DEFgh...`)
 
@@ -25,13 +25,13 @@ This guide will walk you through testing the Telegram bot integration end-to-end
 node dist/cli/index.js telegram set-token 123456789:ABC-DEFgh...
 
 # Expected output:
-# ✓ Telegram bot token saved to /home/user/.mudpuppy/secrets.env
+# ✓ Telegram bot token saved to /home/user/.matrioshka-brain/secrets.env
 #   Next: openclaw telegram enable
 ```
 
 **Verify:**
 - [ ] Token saved successfully
-- [ ] File `~/.mudpuppy/secrets.env` exists
+- [ ] File `~/.matrioshka-brain/secrets.env` exists
 - [ ] Token is NOT in git (check `git status`)
 
 ### Step 2: Enable Telegram Integration
@@ -46,7 +46,7 @@ node dist/cli/index.js telegram enable
 
 **Verify:**
 - [ ] Telegram enabled in config
-- [ ] `mudpuppy status` shows Telegram: Enabled ✅
+- [ ] `matrioshka-brain status` shows Telegram: Enabled ✅
 
 ### Step 3: Check Status
 
@@ -54,10 +54,10 @@ node dist/cli/index.js telegram enable
 node dist/cli/index.js status
 
 # Expected output:
-# 📊 Mudpuppy Status
+# 📊 Matrioshka Brain Status
 #
 # Version: 0.1.0
-# Workspace: /home/user/.mudpuppy
+# Workspace: /home/user/.matrioshka-brain
 #
 # Telegram:
 #   Enabled: ✅
@@ -77,7 +77,7 @@ node dist/cli/index.js status
 node dist/cli/index.js start
 
 # Expected output:
-# Starting Mudpuppy...
+# Starting Matrioshka Brain...
 #
 # 🤖 Starting Telegram bot...
 # ✅ Bot started: @your_bot_username
@@ -176,7 +176,7 @@ If you have a second Telegram account:
 **Verify:**
 - [ ] Multiple users can pair
 - [ ] Each user receives their own responses
-- [ ] `mudpuppy status` shows correct paired user count
+- [ ] `matrioshka-brain status` shows correct paired user count
 
 ### Step 9: Error Handling
 
