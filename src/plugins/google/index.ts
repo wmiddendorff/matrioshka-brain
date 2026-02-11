@@ -5,6 +5,7 @@ import { google } from 'googleapis';
 import type { OAuth2Client } from 'google-auth-library';
 import { BasePlugin } from '../base.js';
 import type { ToolDefinition } from '../../tools/index.js';
+import { emailSecurity } from '../../email-security/index.js';
 import { emailSecurity } from '../email-security.js';
 
 const GOOGLE_CLIENT_ID_KEY = 'GOOGLE_CLIENT_ID';
@@ -12,10 +13,11 @@ const GOOGLE_CLIENT_SECRET_KEY = 'GOOGLE_CLIENT_SECRET';
 const GOOGLE_REDIRECT_URI_KEY = 'GOOGLE_REDIRECT_URI';
 const GOOGLE_REFRESH_TOKEN_KEY = 'GOOGLE_REFRESH_TOKEN';
 
+// SECURITY: Minimal OAuth scopes - gmail.modify removed
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.compose', // For drafts only
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/calendar.readonly',
 ];
