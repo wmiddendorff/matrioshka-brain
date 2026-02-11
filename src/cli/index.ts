@@ -1125,6 +1125,117 @@ async function cmdScheduleToggle(id: string, enabled: boolean): Promise<void> {
   }
 }
 
+// ============================================
+// Web Management Console Commands
+// ============================================
+
+async function cmdWeb(args: string[]): Promise<void> {
+  const subCmd = args[0];
+  const port = args.includes('--port')
+    ? parseInt(args[args.indexOf('--port') + 1], 10)
+    : 3456;
+
+  switch (subCmd) {
+    case 'start':
+      await cmdWebStart(port);
+      break;
+    case 'stop':
+      await cmdWebStop();
+      break;
+    case 'restart':
+      await cmdWebRestart(port);
+      break;
+    case 'status':
+      await cmdWebStatus();
+      break;
+    default:
+      console.error(`Unknown web command: ${subCmd}`);
+      console.error('Available commands: start, stop, restart, status');
+      process.exit(1);
+  }
+}
+
+async function cmdWebStart(port: number): Promise<void> {
+  const { startDaemon, isDaemonRunning } = await import('../web/index.js');
+
+  if (isDaemonRunning()) {
+    console.error('Web server is already running.');
+    console.log('Run "matrioshka-brain web status" for details.');
+    process.exit(1);
+  }
+
+  console.log(`Starting web management console on port ${port}...`);
+
+  try {
+    await startDaemon(port);
+    console.log(`✓ Web server started successfully!`);
+    console.log();
+    console.log(`Management Console: http://localhost:${port}/`);
+    console.log();
+    console.log('To stop: matrioshka-brain web stop');
+  } catch (error: any) {
+    console.error(`Failed to start web server: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdWebStop(): Promise<void> {
+  const { stopDaemon, isDaemonRunning } = await import('../web/index.js');
+
+  if (!isDaemonRunning()) {
+    console.error('Web server is not running.');
+    process.exit(1);
+  }
+
+  console.log('Stopping web server...');
+
+  try {
+    stopDaemon();
+    console.log('✓ Web server stopped.');
+  } catch (error: any) {
+    console.error(`Failed to stop web server: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdWebRestart(port: number): Promise<void> {
+  const { restartDaemon } = await import('../web/index.js');
+
+  console.log('Restarting web server...');
+
+  try {
+    await restartDaemon(port);
+    console.log(`✓ Web server restarted on port ${port}!`);
+    console.log();
+    console.log(`Management Console: http://localhost:${port}/`);
+  } catch (error: any) {
+    console.error(`Failed to restart web server: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdWebStatus(): Promise<void> {
+  const { getDaemonInfo, getLogPath } = await import('../web/index.js');
+
+  const { running, pid } = getDaemonInfo();
+
+  console.log(`Web Management Console:`);
+  console.log(`  Running: ${running ? 'Yes' : 'No'}`);
+
+  if (running && pid) {
+    console.log(`  PID: ${pid}`);
+    const config = new ConfigManager();
+    const port = config.getValue<number>('web.port') || 3456;
+    console.log(`  Port: ${port}`);
+    console.log(`  URL: http://localhost:${port}/`);
+    console.log();
+    console.log(`Logs: ${getLogPath()}`);
+  } else {
+    console.log();
+    console.log('To start: matrioshka-brain web start');
+  }
+}
+
 // Parse and execute command
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -1186,6 +1297,10 @@ async function main(): Promise<void> {
 
     case 'schedule':
       await cmdSchedule(args.slice(1));
+      break;
+
+    case 'web':
+      await cmdWeb(args.slice(1));
       break;
 
     default:
