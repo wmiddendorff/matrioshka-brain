@@ -34,15 +34,23 @@ registerTool({
     const manager = getPluginManager();
     const plugins = await manager.list();
 
+    // Get status for each plugin
+    const pluginsWithStatus = await Promise.all(
+      plugins.map(async (p: any) => {
+        const status = await manager.status(p.name);
+        return {
+          name: p.name,
+          enabled: p.enabled,
+          configured: status?.configured ?? false,
+          installedAt: p.installedAt,
+          lastUpdated: p.lastUpdated,
+        };
+      })
+    );
+
     return {
       count: plugins.length,
-      plugins: plugins.map((p: any) => ({
-        name: p.name,
-        enabled: p.enabled,
-        installedAt: p.installedAt,
-        lastUpdated: p.lastUpdated,
-        envVarsConfigured: Object.keys(p.envVars).length,
-      })),
+      plugins: pluginsWithStatus,
     };
   },
 });
@@ -76,17 +84,20 @@ registerTool({
   name: 'plugins_add',
   description: 'Add and configure a new plugin',
   inputSchema: z.object({
-    name: z.string().describe('Plugin name (e.g., "gmail", "pipedrive")'),
-    envVars: z
-      .record(z.string())
+    name: z.string().describe('Plugin name (e.g., "google", "pipedrive", "microsoft")'),
+    options: z
+      .record(z.unknown())
       .optional()
-      .describe('Environment variables (API keys, tokens, etc.)'),
+      .describe('Plugin-specific configuration options'),
   }),
   handler: async (input) => {
-    const { name, envVars = {} } = input as { name: string; envVars?: Record<string, string> };
+    const { name, options } = input as { name: string; options?: Record<string, unknown> };
     const manager = getPluginManager();
 
-    const plugin = await manager.add(name, envVars);
+    const plugin = await manager.add(name, options);
+
+    // Register the plugin's tools
+    await manager.registerEnabledPluginTools();
 
     return {
       success: true,
@@ -95,7 +106,7 @@ registerTool({
         enabled: plugin.enabled,
         installedAt: plugin.installedAt,
       },
-      message: `Plugin '${name}' installed successfully. Update your .mcp.json to enable it.`,
+      message: `Plugin '${name}' installed and tools registered successfully.`,
     };
   },
 });
@@ -127,21 +138,24 @@ registerTool({
  */
 registerTool({
   name: 'plugins_update',
-  description: 'Update plugin configuration (enable/disable, update env vars)',
+  description: 'Update plugin configuration (enable/disable)',
   inputSchema: z.object({
     name: z.string().describe('Plugin name'),
     enabled: z.boolean().optional().describe('Enable or disable the plugin'),
-    envVars: z.record(z.string()).optional().describe('Update environment variables'),
   }),
   handler: async (input) => {
-    const { name, enabled, envVars } = input as {
+    const { name, enabled } = input as {
       name: string;
       enabled?: boolean;
-      envVars?: Record<string, string>;
     };
     const manager = getPluginManager();
 
-    await manager.update(name, { enabled, envVars });
+    await manager.update(name, { enabled });
+
+    // Re-register tools if enabling
+    if (enabled) {
+      await manager.registerEnabledPluginTools();
+    }
 
     return {
       success: true,
@@ -180,20 +194,29 @@ registerTool({
 });
 
 /**
- * Generate .mcp.json configuration for all enabled plugins
+ * Re-configure a plugin (re-run setup)
  */
 registerTool({
-  name: 'plugins_generate_config',
-  description: 'Generate .mcp.json configuration entries for all enabled plugins',
-  inputSchema: z.object({}),
-  handler: async () => {
+  name: 'plugins_reconfigure',
+  description: 'Re-run setup for an installed plugin to update credentials',
+  inputSchema: z.object({
+    name: z.string().describe('Plugin name'),
+    options: z.record(z.unknown()).optional().describe('Configuration options'),
+  }),
+  handler: async (input) => {
+    const { name, options } = input as { name: string; options?: Record<string, unknown> };
     const manager = getPluginManager();
-    const mcpConfig = await manager.generateMcpConfig();
+
+    const plugin = manager.getPlugin(name);
+    if (!plugin) {
+      throw new Error(`Unknown plugin: ${name}`);
+    }
+
+    await plugin.setup(options);
 
     return {
-      mcpServers: mcpConfig,
-      message:
-        'Add these entries to your .mcp.json mcpServers section to enable the plugins.',
+      success: true,
+      message: `Plugin '${name}' reconfigured successfully.`,
     };
   },
 });

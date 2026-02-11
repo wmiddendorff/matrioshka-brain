@@ -1,6 +1,12 @@
 // Plugin type definitions
 
 import { z } from 'zod';
+import type { ToolDefinition } from '../tools/index.js';
+
+/**
+ * Plugin authentication type
+ */
+export type PluginAuthType = 'oauth2' | 'api-key' | 'device-code';
 
 /**
  * Plugin definition schema
@@ -8,27 +14,43 @@ import { z } from 'zod';
 export const PluginDefinitionSchema = z.object({
   name: z.string(),
   description: z.string(),
-  package: z.string().optional(), // npm package for npx
-  repo: z.string().optional(), // git repo URL
-  command: z.string(), // command to run (e.g., "npx", "node")
-  args: z.array(z.string()), // command arguments
-  envVars: z.array(
-    z.object({
-      name: z.string(),
-      description: z.string(),
-      required: z.boolean().default(true),
-      defaultValue: z.string().optional(),
-    })
-  ),
-  mcpConfig: z.object({
-    // Template for .mcp.json entry
-    command: z.string(),
-    args: z.array(z.string()),
-    env: z.record(z.string()).optional(),
-  }),
+  authType: z.enum(['oauth2', 'api-key', 'device-code']),
+  secretKeys: z.array(z.string()).describe('Keys stored in secrets.env'),
+  configKeys: z.array(z.string()).optional().describe('Keys stored in config (non-sensitive)'),
+  tools: z.array(z.string()).describe('MCP tool names this plugin registers'),
 });
 
 export type PluginDefinition = z.infer<typeof PluginDefinitionSchema>;
+
+/**
+ * Plugin interface - all plugins must implement this
+ */
+export interface Plugin {
+  /** Plugin name (e.g., "pipedrive", "google") */
+  name: string;
+  
+  /** Plugin description */
+  description: string;
+  
+  /** Authentication type */
+  authType: PluginAuthType;
+  
+  /** Check if plugin is configured (has required secrets) */
+  isConfigured(): Promise<boolean>;
+  
+  /** Set up the plugin (interactive or programmatic) */
+  setup(options?: Record<string, unknown>): Promise<void>;
+  
+  /** Register MCP tools with the tool registry */
+  registerTools(): ToolDefinition[];
+  
+  /** Get plugin status */
+  getStatus(): Promise<{
+    configured: boolean;
+    authenticated: boolean;
+    lastError?: string;
+  }>;
+}
 
 /**
  * Installed plugin schema (adds user configuration)

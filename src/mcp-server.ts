@@ -94,6 +94,18 @@ async function main() {
   // Initialize all tools before starting server
   await initTools();
 
+  // Register tools from enabled plugins
+  try {
+    const { PluginManager } = await import('./plugins/index.js');
+    const config = new ConfigManager();
+    const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+    const pluginManager = new PluginManager(workspaceDir);
+    await pluginManager.registerEnabledPluginTools();
+  } catch (error) {
+    console.error('Failed to register plugin tools:', error instanceof Error ? error.message : String(error));
+    // Continue - not fatal
+  }
+
   // Start file auto-indexer if configured
   try {
     const config = new ConfigManager();

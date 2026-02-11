@@ -2,14 +2,25 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getPluginDefinition, PLUGIN_DEFINITIONS } from './definitions.js';
 import type {
   PluginRegistry,
   InstalledPlugin,
   PluginStatus,
-  PluginDefinition,
+  Plugin,
 } from './types.js';
 import { PluginRegistrySchema } from './types.js';
+import { pipedrivePlugin } from './pipedrive/index.js';
+import { googlePlugin } from './google/index.js';
+import { microsoftPlugin } from './microsoft/index.js';
+
+/**
+ * Registry of all available native plugins
+ */
+export const NATIVE_PLUGINS: Record<string, Plugin> = {
+  pipedrive: pipedrivePlugin,
+  google: googlePlugin,
+  microsoft: microsoftPlugin,
+};
 
 /**
  * Plugin manager
@@ -73,32 +84,31 @@ export class PluginManager {
   async status(name: string): Promise<PluginStatus | null> {
     const registry = await this.load();
     const installed = registry.plugins[name];
-    const definition = getPluginDefinition(name);
+    const plugin = NATIVE_PLUGINS[name];
 
-    if (!definition) {
+    if (!plugin) {
       return null;
     }
 
-    const errors: string[] = [];
-    let configured = true;
-
-    // Check if all required env vars are set
-    if (installed) {
-      for (const envVar of definition.envVars) {
-        if (envVar.required && !installed.envVars[envVar.name]) {
-          configured = false;
-          errors.push(`Missing required env var: ${envVar.name}`);
-        }
-      }
+    try {
+      const pluginStatus = await plugin.getStatus();
+      
+      return {
+        name,
+        enabled: installed?.enabled ?? false,
+        configured: pluginStatus.configured,
+        installed: !!installed,
+        errors: pluginStatus.lastError ? [pluginStatus.lastError] : undefined,
+      };
+    } catch (error) {
+      return {
+        name,
+        enabled: installed?.enabled ?? false,
+        configured: false,
+        installed: !!installed,
+        errors: [error instanceof Error ? error.message : String(error)],
+      };
     }
-
-    return {
-      name,
-      enabled: installed?.enabled ?? false,
-      configured,
-      installed: !!installed,
-      errors: errors.length > 0 ? errors : undefined,
-    };
   }
 
   /**
@@ -106,11 +116,11 @@ export class PluginManager {
    */
   async add(
     name: string,
-    envVars: Record<string, string> = {}
+    options?: Record<string, unknown>
   ): Promise<InstalledPlugin> {
-    const definition = getPluginDefinition(name);
-    if (!definition) {
-      throw new Error(`Unknown plugin: ${name}`);
+    const plugin = NATIVE_PLUGINS[name];
+    if (!plugin) {
+      throw new Error(`Unknown plugin: ${name}. Available: ${Object.keys(NATIVE_PLUGINS).join(', ')}`);
     }
 
     const registry = await this.load();
@@ -120,24 +130,20 @@ export class PluginManager {
       throw new Error(`Plugin already installed: ${name}`);
     }
 
-    // Validate required env vars
-    for (const envVar of definition.envVars) {
-      if (envVar.required && !envVars[envVar.name]) {
-        throw new Error(`Missing required env var: ${envVar.name}`);
-      }
-    }
+    // Run plugin setup
+    await plugin.setup(options);
 
-    const plugin: InstalledPlugin = {
+    const installedPlugin: InstalledPlugin = {
       name,
       enabled: true,
-      envVars,
+      envVars: {}, // Not used for native plugins - they manage their own secrets
       installedAt: new Date().toISOString(),
     };
 
-    registry.plugins[name] = plugin;
+    registry.plugins[name] = installedPlugin;
     await this.save();
 
-    return plugin;
+    return installedPlugin;
   }
 
   /**
@@ -155,69 +161,66 @@ export class PluginManager {
   }
 
   /**
-   * Update plugin configuration
+   * Update plugin configuration (enable/disable)
    */
   async update(
     name: string,
-    updates: Partial<Pick<InstalledPlugin, 'enabled' | 'envVars'>>
+    updates: Partial<Pick<InstalledPlugin, 'enabled'>>
   ): Promise<void> {
     const registry = await this.load();
-    const plugin = registry.plugins[name];
+    const installedPlugin = registry.plugins[name];
 
-    if (!plugin) {
+    if (!installedPlugin) {
       throw new Error(`Plugin not installed: ${name}`);
     }
 
     if (updates.enabled !== undefined) {
-      plugin.enabled = updates.enabled;
+      installedPlugin.enabled = updates.enabled;
     }
 
-    if (updates.envVars !== undefined) {
-      plugin.envVars = { ...plugin.envVars, ...updates.envVars };
-    }
-
-    plugin.lastUpdated = new Date().toISOString();
+    installedPlugin.lastUpdated = new Date().toISOString();
     await this.save();
   }
 
   /**
-   * Generate .mcp.json configuration for all enabled plugins
+   * Get all available native plugins
    */
-  async generateMcpConfig(): Promise<Record<string, any>> {
-    const registry = await this.load();
-    const mcpConfig: Record<string, any> = {};
-
-    for (const [name, plugin] of Object.entries(registry.plugins)) {
-      if (!plugin.enabled) continue;
-
-      const definition = getPluginDefinition(name);
-      if (!definition) continue;
-
-      // Substitute env vars in mcp config
-      const config = JSON.parse(JSON.stringify(definition.mcpConfig)) as {
-        command: string;
-        args: string[];
-        env?: Record<string, string>;
-      };
-      if (config.env) {
-        for (const [key, value] of Object.entries(config.env)) {
-          if (typeof value === 'string' && value.startsWith('${') && value.endsWith('}')) {
-            const varName = value.slice(2, -1);
-            config.env[key] = plugin.envVars[varName] || value;
-          }
-        }
-      }
-
-      mcpConfig[name] = config;
-    }
-
-    return mcpConfig;
+  getAvailablePlugins(): Plugin[] {
+    return Object.values(NATIVE_PLUGINS);
   }
-
+  
   /**
-   * Get all available plugin definitions
+   * Get a specific plugin instance by name
    */
-  getAvailablePlugins(): PluginDefinition[] {
-    return Object.values(PLUGIN_DEFINITIONS);
+  getPlugin(name: string): Plugin | undefined {
+    return NATIVE_PLUGINS[name];
+  }
+  
+  /**
+   * Register tools for all enabled plugins
+   */
+  async registerEnabledPluginTools(): Promise<void> {
+    const registry = await this.load();
+    const { registerTool } = await import('../tools/index.js');
+    
+    for (const [name, installedPlugin] of Object.entries(registry.plugins)) {
+      if (!installedPlugin.enabled) continue;
+      
+      const plugin = NATIVE_PLUGINS[name];
+      if (!plugin) continue;
+      
+      // Check if configured
+      const configured = await plugin.isConfigured();
+      if (!configured) {
+        console.warn(`Plugin '${name}' is enabled but not configured. Skipping tool registration.`);
+        continue;
+      }
+      
+      // Register plugin's tools
+      const tools = plugin.registerTools();
+      for (const tool of tools) {
+        registerTool(tool);
+      }
+    }
   }
 }

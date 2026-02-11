@@ -57,9 +57,9 @@ Plugins:
   plugins list            List installed plugins
   plugins available       List available plugin definitions
   plugins status <name>   Show plugin status
-  plugins add <name>      Add a plugin (interactive)
+  plugins add <name>      Add a plugin (interactive setup)
+  plugins setup <name>    Re-run setup for a plugin
   plugins remove <name>   Remove a plugin
-  plugins config          Generate .mcp.json configuration
 
 Scheduler:
   schedule list           List all scheduled tasks
@@ -746,8 +746,12 @@ async function cmdPlugins(args: string[]): Promise<void> {
       await cmdPluginsRemove(args[1]);
       break;
 
-    case 'config':
-      await cmdPluginsConfig();
+    case 'setup':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain plugins setup <name>');
+        process.exit(1);
+      }
+      await cmdPluginsSetup(args[1]);
       break;
 
     default:
@@ -802,19 +806,10 @@ async function cmdPluginsAvailable(): Promise<void> {
   console.log('Available Plugins:');
   console.log();
 
-  for (const def of available) {
-    console.log(`${def.name} - ${def.description}`);
-    if (def.package) {
-      console.log(`  Package: ${def.package}`);
-    }
-    if (def.repo) {
-      console.log(`  Repo: ${def.repo}`);
-    }
-
-    console.log(`  Required env vars:`);
-    for (const env of def.envVars.filter((v) => v.required)) {
-      console.log(`    - ${env.name}: ${env.description}`);
-    }
+  for (const plugin of available) {
+    console.log(`${plugin.name} - ${plugin.description}`);
+    console.log(`  Auth type: ${plugin.authType}`);
+    console.log(`  Tools: ${plugin.registerTools().length} available`);
     console.log();
   }
 }
@@ -846,56 +841,32 @@ async function cmdPluginsStatus(name: string): Promise<void> {
 }
 
 async function cmdPluginsAdd(name: string): Promise<void> {
-  const { PluginManager, getPluginDefinition } = await import('../plugins/index.js');
-  const { default: readline } = await import('readline');
+  const { PluginManager } = await import('../plugins/index.js');
   const config = new ConfigManager();
   const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
   const manager = new PluginManager(workspaceDir);
 
-  const definition = getPluginDefinition(name);
-  if (!definition) {
+  const plugin = manager.getPlugin(name);
+  if (!plugin) {
     console.error(`Unknown plugin: ${name}`);
     console.log('Run "matrioshka-brain plugins available" to see available plugins.');
+    console.log(`Available: ${Object.keys(await import('../plugins/plugins.js')).join(', ')}`);
     process.exit(1);
   }
 
-  console.log(`Installing plugin: ${definition.name}`);
-  console.log(definition.description);
+  console.log(`Installing plugin: ${plugin.name}`);
+  console.log(plugin.description);
   console.log();
 
-  // Collect env vars
-  const envVars: Record<string, string> = {};
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const question = (prompt: string): Promise<string> => {
-    return new Promise((resolve) => {
-      rl.question(prompt, resolve);
-    });
-  };
-
-  for (const envVar of definition.envVars) {
-    if (!envVar.required) continue;
-
-    const defaultHint = envVar.defaultValue ? ` (default: ${envVar.defaultValue})` : '';
-    const value = await question(`${envVar.name}${defaultHint}: `);
-    envVars[envVar.name] = value || envVar.defaultValue || '';
-  }
-
-  rl.close();
-
   try {
-    await manager.add(name, envVars);
+    // Plugin will handle its own interactive setup
+    await manager.add(name);
+    
     console.log();
     console.log(`✓ Plugin '${name}' installed successfully!`);
     console.log();
-    console.log('Next steps:');
-    console.log('1. Run "matrioshka-brain plugins config" to generate .mcp.json configuration');
-    console.log('2. Add the generated entries to your .mcp.json');
-    console.log('3. Restart Claude Code to load the plugin');
+    console.log('Plugin tools are now available in Claude Code.');
+    console.log('Restart Claude Code if it was already running.');
   } catch (error: any) {
     console.error(`Failed to install plugin: ${error.message}`);
     process.exit(1);
@@ -918,19 +889,30 @@ async function cmdPluginsRemove(name: string): Promise<void> {
   }
 }
 
-async function cmdPluginsConfig(): Promise<void> {
+async function cmdPluginsSetup(name: string): Promise<void> {
   const { PluginManager } = await import('../plugins/index.js');
   const config = new ConfigManager();
   const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
   const manager = new PluginManager(workspaceDir);
 
-  const mcpConfig = await manager.generateMcpConfig();
+  const plugin = manager.getPlugin(name);
+  if (!plugin) {
+    console.error(`Unknown plugin: ${name}`);
+    process.exit(1);
+  }
 
-  console.log('Add these entries to your .mcp.json mcpServers section:');
+  console.log(`Setting up plugin: ${plugin.name}`);
+  console.log(plugin.description);
   console.log();
-  console.log(JSON.stringify(mcpConfig, null, 2));
-  console.log();
-  console.log('After updating .mcp.json, restart Claude Code to load the plugins.');
+
+  try {
+    await plugin.setup();
+    console.log();
+    console.log(`✓ Plugin '${name}' configured successfully!`);
+  } catch (error: any) {
+    console.error(`Setup failed: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 // ============================================
