@@ -133,6 +133,11 @@ matrioshka-brain schedule remove <id>        # Remove a task
 matrioshka-brain schedule status <id>        # Show task status
 matrioshka-brain schedule enable <id>        # Enable a task
 matrioshka-brain schedule disable <id>       # Disable a task
+
+matrioshka-brain web start [--port 3456]     # Start management console
+matrioshka-brain web stop                    # Stop console
+matrioshka-brain web restart                 # Restart console
+matrioshka-brain web status                  # Show console status
 ```
 
 If not installed globally, use `node dist/cli/index.js` instead of `matrioshka-brain`.
@@ -238,6 +243,27 @@ matrioshka-brain schedule add
 ```
 
 The scheduler can trigger Claude Code/Codex runs for heartbeat tasks, enabling true autonomous operation.
+
+## Web Management Console
+
+A localhost-only web UI for configuration and monitoring (NOT a chat interface - MB runs inside Claude Code/Codex which provides the chat).
+
+**Start the console:**
+```bash
+matrioshka-brain web start
+# Open http://localhost:3456
+```
+
+**Features:**
+- **Dashboard** - System status overview
+- **Plugin Management** - Configure Gmail, Pipedrive, etc.
+- **Schedule Manager** - View/edit autonomous tasks
+- **Memory Browser** - Search and manage knowledge base
+- **Soul File Editor** - Edit personality files (SOUL.md, etc.)
+- **Telegram Pairing** - Approve/deny pairing requests
+- **Audit Log Viewer** - Review autonomous actions
+
+**Why no chat interface?** Matrioshka Brain already runs inside Claude Code/Codex - that's the chat interface with full MCP tool access. The web UI is purely for configuration and monitoring.
 
 ## Development
 
