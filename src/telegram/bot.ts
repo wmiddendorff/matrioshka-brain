@@ -17,7 +17,7 @@ import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { dirname } from 'path';
 import { resolvePath } from '../config.js';
 import { getSecret } from '../secrets.js';
-import { getSocketPath, writePid, removePid } from './daemon.js';
+import { getSocketPath, writePid, removePid, isWindows } from './daemon.js';
 import {
   IPCRequest,
   IPCResponse,
@@ -514,15 +514,17 @@ async function handleIPC(request: IPCRequest): Promise<IPCResponse> {
 function startSocketServer(): void {
   const socketPath = getSocketPath();
 
-  // Clean up old socket file if it exists
-  if (existsSync(socketPath)) {
+  // Clean up old socket file if it exists (Unix only - named pipes don't exist in filesystem)
+  if (!isWindows() && existsSync(socketPath)) {
     unlinkSync(socketPath);
   }
 
-  // Ensure directory exists
-  const dir = dirname(socketPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  // Ensure directory exists (Unix only)
+  if (!isWindows()) {
+    const dir = dirname(socketPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
   }
 
   const server = createServer((socket: Socket) => {
@@ -567,7 +569,7 @@ function startSocketServer(): void {
   process.on('SIGTERM', () => {
     console.log('Received SIGTERM, shutting down...');
     server.close();
-    if (existsSync(socketPath)) {
+    if (!isWindows() && existsSync(socketPath)) {
       unlinkSync(socketPath);
     }
     removePid();
@@ -577,7 +579,7 @@ function startSocketServer(): void {
   process.on('SIGINT', () => {
     console.log('Received SIGINT, shutting down...');
     server.close();
-    if (existsSync(socketPath)) {
+    if (!isWindows() && existsSync(socketPath)) {
       unlinkSync(socketPath);
     }
     removePid();

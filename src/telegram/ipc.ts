@@ -1,13 +1,14 @@
 /**
  * Telegram IPC Client
  *
- * Client for communicating with the Telegram bot daemon over Unix socket.
+ * Client for communicating with the Telegram bot daemon.
+ * Uses Unix socket on macOS/Linux, Named Pipes on Windows.
  * Used by MCP tools to send commands to the daemon.
  */
 
 import { createConnection, Socket } from 'net';
 import { existsSync } from 'fs';
-import { getSocketPath, isDaemonRunning } from './daemon.js';
+import { getSocketPath, isDaemonRunning, isWindows } from './daemon.js';
 import {
   IPCRequest,
   IPCResponse,
@@ -40,8 +41,8 @@ export async function sendRequest(
 ): Promise<IPCResponse> {
   const socketPath = getSocketPath();
 
-  // Check if socket exists
-  if (!existsSync(socketPath)) {
+  // Check if socket/pipe exists (skip check on Windows - named pipes don't show in filesystem)
+  if (!isWindows() && !existsSync(socketPath)) {
     if (!isDaemonRunning()) {
       throw new Error('Telegram bot daemon is not running. Start it with: matrioshka-brain telegram start');
     }
@@ -193,10 +194,10 @@ export async function checkConnection(): Promise<{
   error?: string;
 }> {
   const socketPath = getSocketPath();
-  const socketExists = existsSync(socketPath);
+  const socketExists = isWindows() ? true : existsSync(socketPath); // Named pipes don't exist in filesystem
   const daemonRunning = isDaemonRunning();
 
-  if (!socketExists || !daemonRunning) {
+  if ((!socketExists && !isWindows()) || !daemonRunning) {
     return {
       socketExists,
       daemonRunning,

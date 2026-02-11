@@ -3,6 +3,7 @@
  *
  * Manages the lifecycle of the Telegram bot daemon process.
  * The daemon runs as a detached child process with a PID file.
+ * Uses Unix sockets on macOS/Linux, Named Pipes on Windows.
  */
 
 import { spawn } from 'child_process';
@@ -15,6 +16,13 @@ const SOCKET_FILE = 'bot/telegram.sock';
 const LOG_FILE = 'bot/telegram.log';
 
 /**
+ * Check if running on Windows
+ */
+export function isWindows(): boolean {
+  return process.platform === 'win32';
+}
+
+/**
  * Get the path to the PID file
  */
 export function getPidPath(): string {
@@ -22,9 +30,13 @@ export function getPidPath(): string {
 }
 
 /**
- * Get the path to the Unix socket
+ * Get the path to the socket (Unix socket on Mac/Linux, Named Pipe on Windows)
  */
 export function getSocketPath(): string {
+  if (isWindows()) {
+    // Windows named pipe format: \\.\pipe\<name>
+    return '\\\\.\\pipe\\matrioshka-brain-telegram';
+  }
   return resolvePath(SOCKET_FILE);
 }
 

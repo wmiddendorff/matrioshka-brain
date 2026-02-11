@@ -5,6 +5,7 @@
  * Command-line interface for managing Matrioshka Brain.
  */
 
+import path from 'node:path';
 import { ConfigManager, getMatrioshkaBrainHome, initWorkspace, isWorkspaceInitialized, resolvePath } from '../config.js';
 import { SecretsManager } from '../secrets.js';
 import {
@@ -51,6 +52,22 @@ Heartbeat:
   heartbeat status        Show heartbeat scheduler state
   heartbeat pause         Pause the heartbeat
   heartbeat resume        Resume the heartbeat
+
+Plugins:
+  plugins list            List installed plugins
+  plugins available       List available plugin definitions
+  plugins status <name>   Show plugin status
+  plugins add <name>      Add a plugin (interactive)
+  plugins remove <name>   Remove a plugin
+  plugins config          Generate .mcp.json configuration
+
+Scheduler:
+  schedule list           List all scheduled tasks
+  schedule add            Add a new scheduled task (interactive)
+  schedule remove <id>    Remove a scheduled task
+  schedule status <id>    Show task status
+  schedule enable <id>    Enable a scheduled task
+  schedule disable <id>   Disable a scheduled task
 
 Environment:
   MATRIOSHKA_BRAIN_HOME           Workspace directory (default: ~/.matrioshka-brain)
@@ -689,6 +706,443 @@ function cmdHeartbeatResume(): void {
   console.log('Or enable it: matrioshka-brain config set heartbeat.enabled true');
 }
 
+// ============================================
+// Plugin Commands
+// ============================================
+
+async function cmdPlugins(args: string[]): Promise<void> {
+  const subCmd = args[0];
+
+  switch (subCmd) {
+    case 'list':
+      await cmdPluginsList();
+      break;
+
+    case 'available':
+      await cmdPluginsAvailable();
+      break;
+
+    case 'status':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain plugins status <name>');
+        process.exit(1);
+      }
+      await cmdPluginsStatus(args[1]);
+      break;
+
+    case 'add':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain plugins add <name>');
+        process.exit(1);
+      }
+      await cmdPluginsAdd(args[1]);
+      break;
+
+    case 'remove':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain plugins remove <name>');
+        process.exit(1);
+      }
+      await cmdPluginsRemove(args[1]);
+      break;
+
+    case 'config':
+      await cmdPluginsConfig();
+      break;
+
+    default:
+      console.error(`Unknown plugins command: ${subCmd}`);
+      console.error('Available commands: list, available, status, add, remove, config');
+      process.exit(1);
+  }
+}
+
+async function cmdPluginsList(): Promise<void> {
+  const { PluginManager } = await import('../plugins/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const manager = new PluginManager(workspaceDir);
+
+  const plugins = await manager.list();
+
+  if (plugins.length === 0) {
+    console.log('No plugins installed.');
+    console.log('Run "matrioshka-brain plugins available" to see available plugins.');
+    return;
+  }
+
+  console.log('Installed Plugins:');
+  console.log();
+
+  for (const plugin of plugins) {
+    const status = await manager.status(plugin.name);
+    const statusIcon = status?.configured ? '✓' : '⚠';
+    const enabledIcon = plugin.enabled ? '●' : '○';
+
+    console.log(`${enabledIcon} ${statusIcon} ${plugin.name}`);
+    console.log(`  Installed: ${new Date(plugin.installedAt).toLocaleString()}`);
+    if (plugin.lastUpdated) {
+      console.log(`  Updated: ${new Date(plugin.lastUpdated).toLocaleString()}`);
+    }
+    if (status?.errors && status.errors.length > 0) {
+      console.log(`  Issues: ${status.errors.join(', ')}`);
+    }
+    console.log();
+  }
+}
+
+async function cmdPluginsAvailable(): Promise<void> {
+  const { PluginManager } = await import('../plugins/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const manager = new PluginManager(workspaceDir);
+
+  const available = manager.getAvailablePlugins();
+
+  console.log('Available Plugins:');
+  console.log();
+
+  for (const def of available) {
+    console.log(`${def.name} - ${def.description}`);
+    if (def.package) {
+      console.log(`  Package: ${def.package}`);
+    }
+    if (def.repo) {
+      console.log(`  Repo: ${def.repo}`);
+    }
+
+    console.log(`  Required env vars:`);
+    for (const env of def.envVars.filter((v) => v.required)) {
+      console.log(`    - ${env.name}: ${env.description}`);
+    }
+    console.log();
+  }
+}
+
+async function cmdPluginsStatus(name: string): Promise<void> {
+  const { PluginManager } = await import('../plugins/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const manager = new PluginManager(workspaceDir);
+
+  const status = await manager.status(name);
+
+  if (!status) {
+    console.error(`Plugin not found: ${name}`);
+    console.log('Run "matrioshka-brain plugins available" to see available plugins.');
+    process.exit(1);
+  }
+
+  console.log(`Plugin: ${status.name}`);
+  console.log(`Installed: ${status.installed ? 'Yes' : 'No'}`);
+  console.log(`Enabled: ${status.enabled ? 'Yes' : 'No'}`);
+  console.log(`Configured: ${status.configured ? 'Yes' : 'No'}`);
+
+  if (status.errors && status.errors.length > 0) {
+    console.log();
+    console.log('Issues:');
+    status.errors.forEach((e: string) => console.log(`  - ${e}`));
+  }
+}
+
+async function cmdPluginsAdd(name: string): Promise<void> {
+  const { PluginManager, getPluginDefinition } = await import('../plugins/index.js');
+  const { default: readline } = await import('readline');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const manager = new PluginManager(workspaceDir);
+
+  const definition = getPluginDefinition(name);
+  if (!definition) {
+    console.error(`Unknown plugin: ${name}`);
+    console.log('Run "matrioshka-brain plugins available" to see available plugins.');
+    process.exit(1);
+  }
+
+  console.log(`Installing plugin: ${definition.name}`);
+  console.log(definition.description);
+  console.log();
+
+  // Collect env vars
+  const envVars: Record<string, string> = {};
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const question = (prompt: string): Promise<string> => {
+    return new Promise((resolve) => {
+      rl.question(prompt, resolve);
+    });
+  };
+
+  for (const envVar of definition.envVars) {
+    if (!envVar.required) continue;
+
+    const defaultHint = envVar.defaultValue ? ` (default: ${envVar.defaultValue})` : '';
+    const value = await question(`${envVar.name}${defaultHint}: `);
+    envVars[envVar.name] = value || envVar.defaultValue || '';
+  }
+
+  rl.close();
+
+  try {
+    await manager.add(name, envVars);
+    console.log();
+    console.log(`✓ Plugin '${name}' installed successfully!`);
+    console.log();
+    console.log('Next steps:');
+    console.log('1. Run "matrioshka-brain plugins config" to generate .mcp.json configuration');
+    console.log('2. Add the generated entries to your .mcp.json');
+    console.log('3. Restart Claude Code to load the plugin');
+  } catch (error: any) {
+    console.error(`Failed to install plugin: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdPluginsRemove(name: string): Promise<void> {
+  const { PluginManager } = await import('../plugins/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const manager = new PluginManager(workspaceDir);
+
+  try {
+    await manager.remove(name);
+    console.log(`✓ Plugin '${name}' removed successfully.`);
+    console.log('Remember to remove it from your .mcp.json as well.');
+  } catch (error: any) {
+    console.error(`Failed to remove plugin: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdPluginsConfig(): Promise<void> {
+  const { PluginManager } = await import('../plugins/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const manager = new PluginManager(workspaceDir);
+
+  const mcpConfig = await manager.generateMcpConfig();
+
+  console.log('Add these entries to your .mcp.json mcpServers section:');
+  console.log();
+  console.log(JSON.stringify(mcpConfig, null, 2));
+  console.log();
+  console.log('After updating .mcp.json, restart Claude Code to load the plugins.');
+}
+
+// ============================================
+// Scheduler Commands
+// ============================================
+
+async function cmdSchedule(args: string[]): Promise<void> {
+  const subCmd = args[0];
+
+  switch (subCmd) {
+    case 'list':
+      await cmdScheduleList();
+      break;
+
+    case 'add':
+      await cmdScheduleAdd();
+      break;
+
+    case 'remove':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain schedule remove <id>');
+        process.exit(1);
+      }
+      await cmdScheduleRemove(args[1]);
+      break;
+
+    case 'status':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain schedule status <id>');
+        process.exit(1);
+      }
+      await cmdScheduleStatus(args[1]);
+      break;
+
+    case 'enable':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain schedule enable <id>');
+        process.exit(1);
+      }
+      await cmdScheduleToggle(args[1], true);
+      break;
+
+    case 'disable':
+      if (!args[1]) {
+        console.error('Usage: matrioshka-brain schedule disable <id>');
+        process.exit(1);
+      }
+      await cmdScheduleToggle(args[1], false);
+      break;
+
+    default:
+      console.error(`Unknown schedule command: ${subCmd}`);
+      console.error('Available commands: list, add, remove, status, enable, disable');
+      process.exit(1);
+  }
+}
+
+async function cmdScheduleList(): Promise<void> {
+  const { Scheduler } = await import('../scheduler/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const scheduler = new Scheduler(workspaceDir);
+
+  const schedules = await scheduler.list();
+
+  if (schedules.length === 0) {
+    console.log('No scheduled tasks.');
+    console.log('Run "matrioshka-brain schedule add" to create one.');
+    return;
+  }
+
+  console.log('Scheduled Tasks:');
+  console.log();
+
+  for (const schedule of schedules) {
+    const status = await scheduler.status(schedule.id);
+    const enabledIcon = schedule.enabled ? '●' : '○';
+    const installedIcon = status?.installed ? '✓' : '⚠';
+
+    console.log(`${enabledIcon} ${installedIcon} ${schedule.name}`);
+    console.log(`  Schedule: ${schedule.schedule}`);
+    console.log(`  Command: ${schedule.command}`);
+    console.log(`  ID: ${schedule.id}`);
+    console.log();
+  }
+}
+
+async function cmdScheduleAdd(): Promise<void> {
+  const { Scheduler } = await import('../scheduler/index.js');
+  const { default: readline } = await import('readline');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const scheduler = new Scheduler(workspaceDir);
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const question = (prompt: string): Promise<string> => {
+    return new Promise((resolve) => {
+      rl.question(prompt, resolve);
+    });
+  };
+
+  console.log('Create a new scheduled task');
+  console.log();
+
+  const name = await question('Task name: ');
+  const description = await question('Description (optional): ');
+
+  console.log();
+  console.log('Schedule format examples:');
+  console.log('  - "09:00" (daily at 9 AM)');
+  console.log('  - "every 30 minutes" (interval)');
+  console.log('  - Custom cron: "0 9 * * 1-5" (weekdays at 9 AM)');
+  console.log();
+
+  const schedule = await question('Schedule: ');
+
+  console.log();
+  console.log('Command to run (examples):');
+  const scriptPath = path.join(
+    path.dirname(path.dirname(path.dirname(new URL(import.meta.url).pathname))),
+    'scheduler-runner.sh'
+  );
+  console.log(`  - ${scriptPath} (heartbeat runner)`);
+  console.log('  - Your custom script path');
+  console.log();
+
+  const command = await question('Command: ');
+  const workdir = await question(`Working directory (default: ${workspaceDir}): `);
+
+  rl.close();
+
+  try {
+    const entry = await scheduler.add({
+      name,
+      description: description || undefined,
+      schedule,
+      command,
+      workdir: workdir || workspaceDir,
+      enabled: true,
+    });
+
+    console.log();
+    console.log(`✓ Scheduled task created: ${entry.id}`);
+    console.log(`Task will run: ${schedule}`);
+    console.log();
+    console.log('Check status with: matrioshka-brain schedule status ' + entry.id);
+  } catch (error: any) {
+    console.error(`Failed to create scheduled task: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdScheduleRemove(id: string): Promise<void> {
+  const { Scheduler } = await import('../scheduler/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const scheduler = new Scheduler(workspaceDir);
+
+  try {
+    await scheduler.remove(id);
+    console.log(`✓ Scheduled task removed: ${id}`);
+  } catch (error: any) {
+    console.error(`Failed to remove scheduled task: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdScheduleStatus(id: string): Promise<void> {
+  const { Scheduler } = await import('../scheduler/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const scheduler = new Scheduler(workspaceDir);
+
+  const status = await scheduler.status(id);
+
+  if (!status) {
+    console.error(`Scheduled task not found: ${id}`);
+    process.exit(1);
+  }
+
+  console.log(`Task: ${status.name}`);
+  console.log(`ID: ${status.id}`);
+  console.log(`Enabled: ${status.enabled ? 'Yes' : 'No'}`);
+  console.log(`Installed: ${status.installed ? 'Yes' : 'No'}`);
+  console.log(`Platform: ${status.platform}`);
+
+  if (status.errors && status.errors.length > 0) {
+    console.log();
+    console.log('Errors:');
+    status.errors.forEach((e: string) => console.log(`  - ${e}`));
+  }
+}
+
+async function cmdScheduleToggle(id: string, enabled: boolean): Promise<void> {
+  const { Scheduler } = await import('../scheduler/index.js');
+  const config = new ConfigManager();
+  const workspaceDir = config.getValue<string>('workspaceDir') || getMatrioshkaBrainHome();
+  const scheduler = new Scheduler(workspaceDir);
+
+  try {
+    await scheduler.toggle(id, enabled);
+    console.log(`✓ Scheduled task ${enabled ? 'enabled' : 'disabled'}: ${id}`);
+  } catch (error: any) {
+    console.error(`Failed to toggle scheduled task: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 // Parse and execute command
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -742,6 +1196,14 @@ async function main(): Promise<void> {
 
     case 'heartbeat':
       await cmdHeartbeat(args.slice(1));
+      break;
+
+    case 'plugins':
+      await cmdPlugins(args.slice(1));
+      break;
+
+    case 'schedule':
+      await cmdSchedule(args.slice(1));
       break;
 
     default:
