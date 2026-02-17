@@ -6,7 +6,7 @@
  * debouncing and content hash tracking to detect actual changes.
  */
 
-import { watch, readFileSync, readdirSync, statSync, existsSync, type FSWatcher } from 'fs';
+import { watch, readFileSync, readdirSync, statSync, existsSync, lstatSync, type FSWatcher } from 'fs';
 import { join, relative, extname } from 'path';
 import { createHash } from 'crypto';
 import { resolvePath } from '../config.js';
@@ -93,10 +93,16 @@ function scanDirectory(dir: string): string[] {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        files.push(...scanDirectory(fullPath));
-      } else if (entry.isFile() && extname(entry.name) === '.md') {
-        files.push(fullPath);
+      // Use statSync to follow symlinks (Dirent.isDirectory() returns false for symlinks)
+      try {
+        const stat = statSync(fullPath);
+        if (stat.isDirectory()) {
+          files.push(...scanDirectory(fullPath));
+        } else if (stat.isFile() && extname(entry.name) === '.md') {
+          files.push(fullPath);
+        }
+      } catch {
+        // Broken symlink or permission error
       }
     }
   } catch {

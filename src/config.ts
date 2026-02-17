@@ -52,6 +52,18 @@ export interface MatrioshkaBrainConfig {
     auditLog: boolean;
     maxMessageLength: number;
   };
+  email: {
+    security: {
+      senderWhitelist: string[];
+      senderBlacklist: string[];
+      defaultAction: 'summarize-only' | 'read-only' | 'full-access';
+      sendMode: 'draft-only' | 'auto-send-whitelist' | 'full-access';
+      autoSendWhitelist: string[];
+      maxSendsPerHour: number;
+      neverExecuteEmailInstructions: boolean;
+      attachmentPolicy: 'metadata-only' | 'read-allowed' | 'full-access';
+    };
+  };
 }
 
 const DEFAULT_CONFIG: MatrioshkaBrainConfig = {
@@ -80,6 +92,18 @@ const DEFAULT_CONFIG: MatrioshkaBrainConfig = {
     approvalRequired: ['soul_propose_update', 'telegram_pair'],
     auditLog: true,
     maxMessageLength: 4096,
+  },
+  email: {
+    security: {
+      senderWhitelist: [],
+      senderBlacklist: [],
+      defaultAction: 'summarize-only',
+      sendMode: 'draft-only',
+      autoSendWhitelist: [],
+      maxSendsPerHour: 5,
+      neverExecuteEmailInstructions: true,
+      attachmentPolicy: 'metadata-only',
+    },
   },
 };
 
@@ -128,6 +152,14 @@ export class ConfigManager {
       },
       heartbeat: { ...DEFAULT_CONFIG.heartbeat, ...loaded.heartbeat },
       security: { ...DEFAULT_CONFIG.security, ...loaded.security },
+      email: {
+        ...DEFAULT_CONFIG.email,
+        ...loaded.email,
+        security: {
+          ...DEFAULT_CONFIG.email.security,
+          ...loaded.email?.security,
+        },
+      },
     };
   }
 

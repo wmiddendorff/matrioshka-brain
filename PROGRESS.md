@@ -1,9 +1,9 @@
 # Matrioshka Brain v2 - Development Progress
 
-**Last Updated:** 2026-02-03
+**Last Updated:** 2026-02-11
 **Architecture:** MCP-first
-**Current Phase:** Phase 5 - Skill Layer & Polish
-**Status:** Phase 5 Complete, Awaiting Human Verification
+**Current Phase:** Phase 6 - Sales Assistant & Enterprise Features
+**Status:** Phase 6 Complete, Awaiting PR Review
 
 ---
 
@@ -31,6 +31,7 @@
 | Phase 3: Soul/Identity Tools | ✅ Complete | 2026-02-03 | 2026-02-03 |
 | Phase 4: Autonomy (Heartbeat) | ✅ Complete | 2026-02-03 | 2026-02-03 |
 | Phase 5: Skill Layer & Polish | ✅ Complete | 2026-02-03 | 2026-02-03 |
+| Phase 6: Sales Assistant & Enterprise | ✅ Complete | 2026-02-11 | 2026-02-11 |
 
 ---
 
@@ -548,6 +549,89 @@
 - Create MCP server skeleton
 - Implement portable config system
 - Basic CLI
+
+---
+
+## Phase 6: Sales Assistant & Enterprise Features
+
+**Status:** ✅ Complete  
+**Started:** 2026-02-11  
+**Completed:** 2026-02-11  
+**Objective:** Deploy Matrioshka Brain for sales professionals with plugin system, cross-platform scheduler, and sales-optimized profile.
+
+### Acceptance Criteria
+
+- [x] Plugin system for external MCP server integrations
+- [x] Pre-built plugin definitions (Gmail, Outlook, Pipedrive, Google Calendar)
+- [x] Sales assistant skill profile with workflows
+- [x] Cross-platform scheduler (macOS launchd, Windows Task Scheduler, Linux cron)
+- [x] Enhanced setup.sh with --profile sales option
+- [x] Windows compatibility (named pipes for IPC)
+- [x] All 172 existing tests still pass
+
+### Deliverables
+
+#### Plugin System
+- [x] `src/plugins/types.ts` - Plugin schemas and types
+- [x] `src/plugins/definitions.ts` - Pre-built plugin definitions (Gmail, Outlook, Pipedrive)
+- [x] `src/plugins/plugins.ts` - PluginManager class (add/remove/list/status)
+- [x] `src/plugins/index.ts` - Module exports
+- [x] `src/tools/plugins.ts` - 7 MCP tools for plugin management
+- [x] CLI commands: `plugins list|available|add|remove|status|config`
+- [x] Plugin registry stored in `~/.matrioshka-brain/plugins.json`
+
+#### Sales Assistant Profile
+- [x] `skills/sales-assistant/SKILL.md` - Sales persona and workflows
+- [x] `src/soul/profiles/sales/SOUL.md` - Sales assistant personality
+- [x] `src/soul/profiles/sales/AGENTS.md` - Sales operating instructions
+- [x] `src/soul/profiles/sales/HEARTBEAT.md` - Sales heartbeat tasks
+- [x] Workflows: morning pipeline review, email management, calendar prep, EOD summary
+
+#### Cross-Platform Scheduler
+- [x] `src/scheduler/types.ts` - Schedule entry schemas
+- [x] `src/scheduler/scheduler.ts` - Cross-platform Scheduler class
+- [x] `src/scheduler/index.ts` - Module exports
+- [x] `scheduler-runner.sh` - Unix heartbeat runner script
+- [x] `scheduler-runner.bat` - Windows heartbeat runner script
+- [x] CLI commands: `schedule list|add|remove|status|enable|disable`
+- [x] macOS: launchd plist generation and installation
+- [x] Windows: Task Scheduler XML and schtasks integration
+- [x] Linux: crontab entry management
+
+#### Windows Compatibility
+- [x] Named pipes support in `src/telegram/ipc.ts`
+- [x] `isWindows()` helper in `src/telegram/daemon.ts`
+- [x] Socket cleanup guards (Unix-only)
+- [x] Path handling verified (already using `path.join`)
+
+#### Setup & Documentation
+- [x] Enhanced `setup.sh` with `--profile sales` option
+- [x] Auto-copy sales profile templates to workspace
+- [x] Updated README.md with plugins, scheduler, and sales profile sections
+- [x] Updated CLI help text with new commands
+
+### Testing Checklist
+
+- [x] Unit: All existing 172 tests pass
+- [x] Build: TypeScript compilation succeeds
+- [x] Integration: Plugin manager CRUD operations
+- [x] Manual: Sales profile setup workflow
+- [x] Manual: Plugin add → generate config → .mcp.json update
+
+### Integration Points
+
+- **Plugins** extend Claude Code with external services (Pipedrive, Gmail, Outlook)
+- **Scheduler** enables autonomous operation via OS-level task scheduling
+- **Sales Profile** provides turnkey solution for sales professionals
+- **Windows Support** ensures cross-platform compatibility
+
+### Future Enhancements
+
+- [ ] Web UI for plugin and schedule management
+- [ ] More pre-built plugins (Slack, HubSpot, Salesforce)
+- [ ] Profile marketplace or templates
+- [ ] Docker container deployment option
+- [ ] Tests for scheduler and plugin system
 
 ---
 

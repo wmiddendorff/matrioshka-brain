@@ -115,6 +115,7 @@ export const TOOL_CATEGORIES = {
   memory: ['memory_add', 'memory_search', 'memory_get', 'memory_stats', 'memory_delete'],
   soul: ['soul_read', 'soul_propose_update'],
   heartbeat: ['heartbeat_status', 'heartbeat_pause', 'heartbeat_resume'],
+  plugins: ['plugins_list', 'plugins_add', 'plugins_remove', 'plugins_status', 'plugins_update', 'plugins_available', 'plugins_generate_config'],
 } as const;
 
 /**
@@ -127,6 +128,7 @@ export async function initTools(): Promise<void> {
   await import('./memory.js');
   await import('./soul.js');
   await import('./heartbeat.js');
+  await import('./plugins.js');
 }
 
 // Auto-initialize when module is loaded (for MCP server)

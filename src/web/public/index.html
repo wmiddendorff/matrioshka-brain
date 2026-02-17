@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrioshka Brain - Management Console</title>
+  <link rel="stylesheet" href="/console.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧠 Matrioshka Brain</h1>
+      <p class="subtitle">Management Console</p>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="plugins">Plugins</button>
+      <button class="tab" data-tab="schedules">Schedules</button>
+      <button class="tab" data-tab="memory">Memory</button>
+      <button class="tab" data-tab="soul">Soul Files</button>
+      <button class="tab" data-tab="telegram">Telegram</button>
+      <button class="tab" data-tab="audit">Audit Log</button>
+    </nav>
+
+    <main>
+      <!-- Dashboard -->
+      <section id="dashboard" class="tab-content active">
+        <h2>System Status</h2>
+        <div class="status-cards" id="status-cards">
+          <div class="card">
+            <div class="card-title">Telegram Bot</div>
+            <div class="card-value" id="telegram-status">Loading...</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Plugins</div>
+            <div class="card-value" id="plugins-status">Loading...</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Scheduled Tasks</div>
+            <div class="card-value" id="schedules-status">Loading...</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Heartbeat</div>
+            <div class="card-value" id="heartbeat-status">Loading...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Plugins -->
+      <section id="plugins" class="tab-content">
+        <h2>Plugin Management</h2>
+        <div class="actions">
+          <button class="btn" id="refresh-plugins">Refresh</button>
+        </div>
+        <div id="plugins-list" class="list">Loading...</div>
+      </section>
+
+      <!-- Schedules -->
+      <section id="schedules" class="tab-content">
+        <h2>Scheduled Tasks</h2>
+        <div class="actions">
+          <button class="btn" id="refresh-schedules">Refresh</button>
+        </div>
+        <div id="schedules-list" class="list">Loading...</div>
+      </section>
+
+      <!-- Memory -->
+      <section id="memory" class="tab-content">
+        <h2>Memory Browser</h2>
+        <div class="search-box">
+          <input type="text" id="memory-search" placeholder="Search memories..." />
+          <button class="btn" id="memory-search-btn">Search</button>
+        </div>
+        <div class="stats" id="memory-stats">Loading...</div>
+        <div id="memory-results" class="list"></div>
+      </section>
+
+      <!-- Soul Files -->
+      <section id="soul" class="tab-content">
+        <h2>Soul File Editor</h2>
+        <div class="file-selector">
+          <select id="soul-file-select">
+            <option value="SOUL.md">SOUL.md</option>
+            <option value="IDENTITY.md">IDENTITY.md</option>
+            <option value="AGENTS.md">AGENTS.md</option>
+            <option value="USER.md">USER.md</option>
+            <option value="HEARTBEAT.md">HEARTBEAT.md</option>
+          </select>
+          <button class="btn" id="load-soul-file">Load</button>
+          <button class="btn primary" id="save-soul-file">Save</button>
+        </div>
+        <textarea id="soul-editor" placeholder="File content will appear here..."></textarea>
+      </section>
+
+      <!-- Telegram -->
+      <section id="telegram" class="tab-content">
+        <h2>Telegram Pairing</h2>
+        <div class="actions">
+          <button class="btn" id="refresh-telegram">Refresh</button>
+        </div>
+        <div id="telegram-pairs" class="list">Loading...</div>
+      </section>
+
+      <!-- Audit Log -->
+      <section id="audit" class="tab-content">
+        <h2>Audit Log</h2>
+        <div class="actions">
+          <button class="btn" id="refresh-audit">Refresh</button>
+        </div>
+        <div id="audit-log" class="list">Loading...</div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/console.js"></script>
+</body>
+</html>

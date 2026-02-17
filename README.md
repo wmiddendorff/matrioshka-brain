@@ -69,7 +69,7 @@ Open the project in Claude Code. The MCP server starts automatically.
 
 ## MCP Tools
 
-16 tools across 5 categories:
+23 tools across 6 categories:
 
 | Tool | Category | Description |
 |------|----------|-------------|
@@ -89,6 +89,13 @@ Open the project in Claude Code. The MCP server starts automatically.
 | `heartbeat_status` | Heartbeat | Check autonomous scheduler status |
 | `heartbeat_pause` | Heartbeat | Pause autonomous execution |
 | `heartbeat_resume` | Heartbeat | Resume autonomous execution |
+| `plugins_list` | Plugins | List installed plugins |
+| `plugins_add` | Plugins | Add and configure a new plugin |
+| `plugins_remove` | Plugins | Remove an installed plugin |
+| `plugins_status` | Plugins | Get detailed status for a plugin |
+| `plugins_update` | Plugins | Update plugin configuration |
+| `plugins_available` | Plugins | List available plugin definitions |
+| `plugins_generate_config` | Plugins | Generate .mcp.json for installed plugins |
 
 ## CLI Commands
 
@@ -112,6 +119,25 @@ matrioshka-brain soul deny <id>              # Deny a soul update
 matrioshka-brain heartbeat status            # Show scheduler status
 matrioshka-brain heartbeat pause             # Pause heartbeat
 matrioshka-brain heartbeat resume            # Resume heartbeat
+
+matrioshka-brain plugins list                # List installed plugins
+matrioshka-brain plugins available           # List available plugins
+matrioshka-brain plugins add <name>          # Add a plugin (interactive)
+matrioshka-brain plugins remove <name>       # Remove a plugin
+matrioshka-brain plugins status <name>       # Show plugin status
+matrioshka-brain plugins config              # Generate .mcp.json configuration
+
+matrioshka-brain schedule list               # List scheduled tasks
+matrioshka-brain schedule add                # Add scheduled task (interactive)
+matrioshka-brain schedule remove <id>        # Remove a task
+matrioshka-brain schedule status <id>        # Show task status
+matrioshka-brain schedule enable <id>        # Enable a task
+matrioshka-brain schedule disable <id>       # Disable a task
+
+matrioshka-brain web start [--port 3456]     # Start management console
+matrioshka-brain web stop                    # Stop console
+matrioshka-brain web restart                 # Restart console
+matrioshka-brain web status                  # Show console status
 ```
 
 If not installed globally, use `node dist/cli/index.js` instead of `matrioshka-brain`.
@@ -135,7 +161,33 @@ If not installed globally, use `node dist/cli/index.js` instead of `matrioshka-b
 └── secrets.env            # Bot token, API keys (never committed)
 ```
 
-## Skill Setup
+## Skills & Profiles
+
+Matrioshka Brain supports multiple pre-configured profiles for different use cases.
+
+### Sales Assistant Profile
+
+Specialized profile for sales professionals with:
+- Pipedrive CRM integration
+- Email management (Gmail/Outlook)
+- Calendar integration
+- Autonomous pipeline monitoring
+- Follow-up reminders
+- Meeting prep automation
+
+**Quick setup:**
+```bash
+./setup.sh --profile sales
+```
+
+This installs:
+- Sales-optimized SOUL.md, AGENTS.md, HEARTBEAT.md
+- Pre-configured plugin definitions (Pipedrive, Gmail, Google Calendar)
+- Sales assistant skill profile
+
+See `skills/sales-assistant/SKILL.md` for detailed workflows.
+
+### Default Profile
 
 The optional skill layer gives the agent a persistent persona. To install:
 
@@ -148,6 +200,70 @@ The skill instructs Claude to:
 - Search memory before answering context questions
 - Store new facts as they come up
 - Propose soul updates for meaningful personality growth
+
+## Plugins
+
+Matrioshka Brain supports external MCP server integrations via a plugin system. Pre-built plugins:
+
+| Plugin | Description | Required Credentials |
+|--------|-------------|---------------------|
+| gmail | Google Workspace (Gmail + Calendar) | OAuth Client ID & Secret |
+| outlook | Microsoft 365 (Outlook + Calendar) | Azure App Registration |
+| pipedrive | Pipedrive CRM | API Token + Domain |
+
+**Add a plugin:**
+```bash
+matrioshka-brain plugins add gmail
+# Interactive prompt for OAuth credentials
+
+matrioshka-brain plugins config
+# Generates .mcp.json entries
+
+# Add generated entries to your .mcp.json
+```
+
+Plugins integrate seamlessly with Claude Code's MCP protocol.
+
+## Scheduler
+
+For autonomous operation outside of active Claude Code sessions, Matrioshka Brain includes a cross-platform job scheduler:
+
+- **macOS:** launchd (~/Library/LaunchAgents/)
+- **Windows:** Task Scheduler
+- **Linux:** cron
+
+**Add a scheduled task:**
+```bash
+matrioshka-brain schedule add
+# Interactive: name, schedule, command
+
+# Example schedule formats:
+# - "09:00" (daily at 9 AM)
+# - "every 30 minutes" (interval)
+```
+
+The scheduler can trigger Claude Code/Codex runs for heartbeat tasks, enabling true autonomous operation.
+
+## Web Management Console
+
+A localhost-only web UI for configuration and monitoring (NOT a chat interface - MB runs inside Claude Code/Codex which provides the chat).
+
+**Start the console:**
+```bash
+matrioshka-brain web start
+# Open http://localhost:3456
+```
+
+**Features:**
+- **Dashboard** - System status overview
+- **Plugin Management** - Configure Gmail, Pipedrive, etc.
+- **Schedule Manager** - View/edit autonomous tasks
+- **Memory Browser** - Search and manage knowledge base
+- **Soul File Editor** - Edit personality files (SOUL.md, etc.)
+- **Telegram Pairing** - Approve/deny pairing requests
+- **Audit Log Viewer** - Review autonomous actions
+
+**Why no chat interface?** Matrioshka Brain already runs inside Claude Code/Codex - that's the chat interface with full MCP tool access. The web UI is purely for configuration and monitoring.
 
 ## Development
 
