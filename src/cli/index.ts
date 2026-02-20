@@ -52,6 +52,14 @@ Heartbeat:
   heartbeat pause         Pause the heartbeat
   heartbeat resume        Resume the heartbeat
 
+Orchestrator:
+  orchestrate             Auto-detect triggers and run Claude Code
+  orchestrate --heartbeat Force heartbeat run
+  orchestrate --telegram  Force telegram message processing
+  orchestrate --task "…"  Run arbitrary task
+  orchestrate --status    Show orchestrator status
+  orchestrate --unlock    Force-release stale lock
+
 Environment:
   MATRIOSHKA_BRAIN_HOME           Workspace directory (default: ~/.matrioshka-brain)
 
@@ -690,6 +698,55 @@ function cmdHeartbeatResume(): void {
 }
 
 // Parse and execute command
+async function cmdOrchestrate(args: string[]): Promise<void> {
+  const { run, getStatus: getOrchestratorStatus, forceUnlock } = await import('../orchestrator/index.js');
+
+  // --status
+  if (args.includes('--status')) {
+    const status = getOrchestratorStatus();
+    console.log('Orchestrator Status:');
+    console.log(`  Locked: ${status.locked}${status.lockStale ? ' (stale)' : ''}`);
+    if (status.lockPid) console.log(`  Lock PID: ${status.lockPid}`);
+    if (status.lockAgeMs) console.log(`  Lock Age: ${Math.round(status.lockAgeMs / 1000)}s`);
+    if (status.lastRunAt) console.log(`  Last Run: ${new Date(status.lastRunAt).toISOString()}`);
+    if (status.lastExitCode !== undefined) console.log(`  Last Exit: ${status.lastExitCode}`);
+    if (status.lastDurationMs) console.log(`  Last Duration: ${Math.round(status.lastDurationMs / 1000)}s`);
+    if (status.lastTriggerTypes) console.log(`  Last Triggers: ${status.lastTriggerTypes.join(', ')}`);
+    if (status.lastError) console.log(`  Last Error: ${status.lastError}`);
+    return;
+  }
+
+  // --unlock
+  if (args.includes('--unlock')) {
+    forceUnlock();
+    console.log('Lock released.');
+    return;
+  }
+
+  // Build options
+  const options: { manualTask?: string; forceHeartbeat?: boolean; forceTelegram?: boolean } = {};
+
+  const taskIdx = args.indexOf('--task');
+  if (taskIdx !== -1 && args[taskIdx + 1]) {
+    options.manualTask = args[taskIdx + 1];
+  }
+  if (args.includes('--heartbeat')) options.forceHeartbeat = true;
+  if (args.includes('--telegram')) options.forceTelegram = true;
+
+  console.log('Running orchestrator...');
+  const result = await run(options);
+
+  if (!result.ran) {
+    console.log(`Skipped: ${result.reason}`);
+    return;
+  }
+
+  console.log(`Completed in ${Math.round((result.durationMs ?? 0) / 1000)}s`);
+  console.log(`Triggers: ${result.triggers.map((t) => t.type).join(', ')}`);
+  console.log(`Exit code: ${result.exitCode}`);
+  if (result.timedOut) console.log('⚠️  Session timed out');
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
@@ -742,6 +799,10 @@ async function main(): Promise<void> {
 
     case 'heartbeat':
       await cmdHeartbeat(args.slice(1));
+      break;
+
+    case 'orchestrate':
+      await cmdOrchestrate(args.slice(1));
       break;
 
     default:

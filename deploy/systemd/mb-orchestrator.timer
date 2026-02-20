@@ -1,0 +1,12 @@
+[Unit]
+Description=Matrioshka Brain Orchestrator Timer
+Documentation=https://github.com/wmiddendorff/matrioshka-brain
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

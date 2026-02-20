@@ -1,0 +1,18 @@
+[Unit]
+Description=Matrioshka Brain Orchestrator
+Documentation=https://github.com/wmiddendorff/matrioshka-brain
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/node %h/Desktop/workspace/git/matrioshka-brain/dist/cli/index.js orchestrate
+Environment=MATRIOSHKA_BRAIN_HOME=%h/.matrioshka-brain
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:%h/.local/bin:%h/.nvm/versions/node/v24.13.0/bin
+WorkingDirectory=%h/Desktop/workspace/git/matrioshka-brain
+TimeoutStartSec=600
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mb-orchestrator
+
+# Don't restart on failure — the timer handles scheduling
+Restart=no
